@@ -36,4 +36,5 @@ Follow project updates and more on [Twitter](https://twitter.com/Tesla3D/).
 In addition, check out these other projects from the same author:
 
 [AssimpNet](https://bitbucket.org/Starnick/assimpnet) - A wrapper for the Open Asset Import Library, which is a sister library to this one.
+
 [Tesla Graphics Engine](https://bitbucket.org/Starnick/tesla3d) - A 3D rendering engine written in C# and the primary driver for developing TeximpNet.
