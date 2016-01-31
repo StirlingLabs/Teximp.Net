@@ -27,7 +27,7 @@ The library is compiled using Visual Studio 2015 and at runtime has no other ext
 
 ## Licensing ##
 
-The library is licensed under the [MIT](https://opensource.org/licenses/MIT) license. This means you're free to modify the source and use the library in whatever way you want, as long as you attribute the original authors. The native library is licensed under the [3-Clause BSD](https://opensource.org/licenses/BSD-3-Clause) license. Please be kind enough to include the licensing text file (it contains both licenses).
+The library is licensed under the [MIT](https://opensource.org/licenses/MIT) license. This means you're free to modify the source and use the library in whatever way you want, as long as you attribute the original authors. The Nvidia Texture Tools library is also licensed under the MIT license. FreeImage is licensed under its [FreeImage License](http://freeimage.sourceforge.net/freeimage-license.txt). Please be kind enough to include the licensing text file (it contains both licenses).
 
 ## Contact ##
 
