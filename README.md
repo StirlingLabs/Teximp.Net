@@ -1,4 +1,4 @@
-**This library is still under development, a binary download and nuget package will be available when it stabilizes.**
+**The latest release can be downloaded from the [Downloads](https://bitbucket.org/Starnick/teximpnet/downloads) section or via [NuGet](https://www.nuget.org/packages/TeximpNet/).**
 
 ## Introduction ##
 This is the official repository for **TeximpNet**, a cross-platform .NET wrapper for the [FreeImage](http://freeimage.sourceforge.net/) and [Nvidia Texture Tools](https://github.com/castano/nvidia-texture-tools) libraries. This wrapper combines functionality from both unmanaged libraries to provide a single, easy to use API surface to import, manipulate and export images. The general motivation is to process textures for graphics applications, so there is an emphasis on using the Nvidia Texture Tools library for compression and mipmap chain generation. 
