@@ -1,16 +1,15 @@
 ﻿using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("TeximpNet")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("A .NET Wrapper for FreeImage and Nvidia Texture Tools.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Nicholas Woodfield")]
 [assembly: AssemblyProduct("TeximpNet")]
-[assembly: AssemblyCopyright("Copyright ©  2016")]
+[assembly: AssemblyCopyright("Copyright © 2016 TeximpNet - Nicholas Woodfield")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

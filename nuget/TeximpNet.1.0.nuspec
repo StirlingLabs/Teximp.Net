@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+    <metadata>
+        <id>TeximpNet</id>
+        <version>1.0</version>
+        <title>TeximpNet</title>
+        <authors>Nicholas Woodfield</authors>
+        <owners>Nicholas Woodfield</owners>
+        <licenseUrl>http://opensource.org/licenses/mit-license.php</licenseUrl>
+        <projectUrl>http://bitbucket.org/Starnick/teximpnet</projectUrl>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <description>A .NET Wrapper for FreeImage and Nvidia Texture Tools.</description>
+        <summary />
+        <copyright>Copyright (c) 2016 TeximpNet - Nicholas Woodfield</copyright>
+        <language>en-US</language>
+        <tags>Importers Content Texture Image Compression DDS</tags>
+        <frameworkAssemblies>
+            <frameworkAssembly assemblyName="System" targetFramework="" />
+        </frameworkAssemblies>
+    </metadata>
+    <files>
+	    <file src="build\TeximpNet.targets" target="build\TeximpNet.targets" />
+        <file src="..\libs\NvidiaTextureTools\nvtt64.dll" target="build\native\win-x64\nvtt64.dll" />
+		<file src="..\libs\NvidiaTextureTools\nvtt32.dll" target="build\native\win-x86\nvtt32.dll" />
+        <file src="..\libs\FreeImage\FreeImage32.dll" target="build\native\win-x86\FreeImage32.dll" />
+		<file src="..\libs\FreeImage\FreeImage64.dll" target="build\native\win-x64\FreeImage64.dll" />
+        <file src="..\TeximpNet\bin\Release\TeximpNet.dll" target="lib\net45\TeximpNet.dll" />
+		<file src="..\TeximpNet\bin\Release\TeximpNet.pdb" target="lib\net45\TeximpNet.pdb" />
+		<file src="..\TeximpNet\bin\Release\TeximpNet.xml" target="lib\net45\TeximpNet.xml" />
+        <file src="..\ChangeLog.txt" target="ChangeLog.txt" />
+        <file src="..\TeximpNetLicense.txt" target="TeximpNetLicense.txt" />
+		<file src="..\TeximpNet\Compression\CompressedImageData.cs" target="src\Compression\CompressedImageData.cs" />
+        <file src="..\TeximpNet\Compression\Compressor.cs" target="src\Compression\Compressor.cs" />
+        <file src="..\TeximpNet\Compression\Enums.cs" target="src\Compression\Enums.cs" />
+        <file src="..\TeximpNet\Properties\AssemblyInfo.cs" target="src\Properties\AssemblyInfo.cs" />
+        <file src="..\TeximpNet\Enums.cs" target="src\Enums.cs" />
+        <file src="..\TeximpNet\InternalInterop.cs" target="src\InternalInterop.cs" />
+        <file src="..\TeximpNet\MemoryHelper.cs" target="src\MemoryHelper.cs" />
+        <file src="..\TeximpNet\RGBAQuad.cs" target="src\RGBAQuad.cs" />
+        <file src="..\TeximpNet\Surface.cs" target="src\Surface.cs" />
+        <file src="..\TeximpNet\TeximpException.cs" target="src\TeximpException.cs" />
+    </files>
+</package>

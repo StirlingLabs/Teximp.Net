@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <CleanDependsOn>
+      $(CleanDependsOn);
+      CleanTeximp;
+    </CleanDependsOn>
+  </PropertyGroup>
+  <Target Name="BeforeBuild">
+    <ItemGroup>
+        <NativeTeximpLibs Include="$(MSBuildThisFileDirectory)\native\win-x86\FreeImage32.dll;
+                                   $(MSBuildThisFileDirectory)\native\win-x64\FreeImage64.dll;
+                                   $(MSBuildThisFileDirectory)\native\win-x86\nvtt32.dll;
+                                   $(MSBuildThisFileDirectory)\native\win-x64\nvtt64.dll"/>
+    </ItemGroup>   
+    <Copy SourceFiles="@(NativeTeximpLibs)"
+          DestinationFolder="$(OutputPath)" >
+    </Copy>
+  </Target>
+  <Target Name="CleanTeximp">
+    <Delete Files="$(TargetDir)FreeImage32.dll; $(TargetDir)FreeImage64.dll; $(TargetDir)nvtt32.dll; $(TargetDir)nvtt64.dll" />
+  </Target>
+</Project>
