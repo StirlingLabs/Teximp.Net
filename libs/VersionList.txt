@@ -1,3 +1,2 @@
-Mono.Cecil 0.9.6.1
 FreeImage 3.17.0
 Nvidia Texture Tools 2.1

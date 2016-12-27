@@ -39,9 +39,9 @@ namespace TeximpNet.Unmanaged
         Windows,
 
         /// <summary>
-        /// Linux platform.
+        /// Unix platform.
         /// </summary>
-        Linux,
+        Unix,
 
         /// <summary>
         /// Mac platform.
@@ -130,7 +130,7 @@ namespace TeximpNet.Unmanaged
                     if (Directory.Exists("/Applications") && Directory.Exists("/System") && Directory.Exists("/Users") && Directory.Exists("/Volumes"))
                         return Platform.Mac;
                     else
-                        return Platform.Linux;
+                        return Platform.Unix;
 
                 case PlatformID.MacOSX:
                     return Platform.Mac;
@@ -220,7 +220,7 @@ namespace TeximpNet.Unmanaged
                 case Platform.Windows:
                     m_impl = new UnmanagedWindowsLibraryImplementation(default32BitPath, default64BitPath, unmanagedFunctionDelegateTypes);
                     break;
-                case Platform.Linux:
+                case Platform.Unix:
                     m_impl = new UnmanagedLinuxLibraryImplementation(default32BitPath, default64BitPath, unmanagedFunctionDelegateTypes);
                     break;
                 case Platform.Mac:
