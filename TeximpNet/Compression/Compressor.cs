@@ -108,7 +108,7 @@ namespace TeximpNet.Compression
 
         public bool Process(String filename)
         {
-            if(String.IsNullOrEmpty(filename))
+            if(String.IsNullOrEmpty(filename) || !m_inputOptions.HasData)
                 return false;
 
             m_outputOptions.ResetCallbacks();
@@ -119,7 +119,7 @@ namespace TeximpNet.Compression
 
         public bool Process(List<CompressedImageData> mipChain)
         {
-            if(mipChain == null)
+            if(mipChain == null || !m_inputOptions.HasData)
                 return false;
 
             m_outputOptions.SetOutputToMemory();
@@ -226,6 +226,7 @@ namespace TeximpNet.Compression
             private int m_maxExtent;
             private RoundMode m_roundMode;
             private WrapMode m_wrapMode;
+            private List<bool> m_faceHasData;
 
             public IntPtr NativePtr
             {
@@ -400,6 +401,27 @@ namespace TeximpNet.Compression
                 }
             }
 
+            /// <summary>
+            /// Gets if the input has mipmap data, this will be true/false depending on the success of the functions to set
+            /// any mipmap data. All mipmap faces (1 for Texture2D, 6 for TextureCube) need to be set for the compressor to run.
+            /// </summary>
+            public bool HasData
+            {
+                get
+                {
+                    if (m_faceHasData.Count == 0)
+                        return false;
+
+                    for(int i = 0; i < m_faceHasData.Count; i++)
+                    {
+                        if (!m_faceHasData[i])
+                            return false;
+                    }
+
+                    return true;
+                }
+            }
+
             internal InputOptions(IntPtr nativePtr)
             {
                 m_inputOptionsPtr = nativePtr;
@@ -417,6 +439,7 @@ namespace TeximpNet.Compression
                 m_mipMaxLevel = -1;
                 m_mipFilter = MipmapFilter.Box;
                 m_mipCount = 0;
+                m_faceHasData = new List<bool>(6);
 
                 m_kaiserWidth = 3;
                 m_kaiserAlpha = 4.0f;
@@ -439,12 +462,24 @@ namespace TeximpNet.Compression
                 //Input format is always BGRA_8UB so don't expose it here
             }
 
-            public void SetTextureLayout(TextureType type, int width, int height, int depth)
+            public void SetTextureLayout(TextureType type, int width, int height, int depth = 1)
             {
                 m_type = type;
                 m_width = width;
                 m_height = height;
                 m_depth = depth;
+                m_faceHasData.Clear();
+
+                switch(type)
+                {
+                    case TextureType.Texture2D:
+                        m_faceHasData.Add(false);
+                        break;
+                    case TextureType.TextureCube:
+                        for (int i = 0; i < 6; i++)
+                            m_faceHasData.Add(false);
+                        break;
+                }
 
                 if(m_generateMipmaps)
                     m_mipMaxLevel = MemoryHelper.CountMipmaps(width, height, depth);
@@ -458,6 +493,7 @@ namespace TeximpNet.Compression
                 m_width = 0;
                 m_height = 0;
                 m_depth = 0;
+                m_faceHasData.Clear();
 
                 NvTextureToolsLibrary.Instance.ResetInputOptionsTextureLayout(m_inputOptionsPtr);
             }
@@ -478,6 +514,33 @@ namespace TeximpNet.Compression
             }
 
             /// <summary>
+            /// Sets mipmap data as input. Format is always considered to be in 32-bit BGRA form. Don't forget to set the texture layout first otherwise this will error.
+            /// </summary>
+            /// <param name="data">Pointer to data.</param>
+            /// <param name="width">Width of the image.</param>
+            /// <param name="height">Height of the image.</param>
+            /// <param name="depth">Depth of the image.</param>
+            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
+            public bool SetMipmapData(IntPtr data, int width, int height, int depth = 1)
+            {
+                return SetMipmapData(data, true, width, height, depth, CubeMapFace.Positive_X, 0);
+            }
+
+            /// <summary>
+            /// Sets mipmap data as input. Don't forget to set the texture layout first otherwise this will error.
+            /// </summary>
+            /// <param name="data">Pointer to data.</param>
+            /// <param name="isBGRA">True if the data is in BGRA format, if false then RGBA. If false then the data is copied and converted to BGRA format.</param>
+            /// <param name="width">Width of the image.</param>
+            /// <param name="height">Height of the image.</param>
+            /// <param name="depth">Depth of the image.</param>
+            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
+            public bool SetMipmapData(IntPtr data, bool isBGRA, int width, int height, int depth = 1)
+            {
+                return SetMipmapData(data, isBGRA, width, height, depth, CubeMapFace.Positive_X, 0);
+            }
+
+            /// <summary>
             /// Sets mipmap data as input. Don't forget to set the texture layout first otherwise this will error.
             /// </summary>
             /// <param name="data">Pointer to data.</param>
@@ -493,6 +556,9 @@ namespace TeximpNet.Compression
                 if(data == IntPtr.Zero)
                     return false;
 
+                if (face == CubeMapFace.None)
+                    face = CubeMapFace.Positive_X;
+
                 IntPtr bgraPtr = data;
                 bool needToDisposeBGRAPtr = false;
 
@@ -502,21 +568,30 @@ namespace TeximpNet.Compression
                     needToDisposeBGRAPtr = true;
                 }
 
+                bool succees = false;
+
                 try
                 {
-                    return NvTextureToolsLibrary.Instance.SetInputOptionsMipmapData(m_inputOptionsPtr, bgraPtr, width, height, depth, (int)face, mipmapLevel);
+                    succees = NvTextureToolsLibrary.Instance.SetInputOptionsMipmapData(m_inputOptionsPtr, bgraPtr, width, height, depth, (int)face, mipmapLevel);
                 }
                 finally
                 {
+                    SetHasData(face, succees);
+
                     if (needToDisposeBGRAPtr)
                         MemoryHelper.FreeMemory(bgraPtr);
                 }
+
+                return succees;
             }
 
             public bool SetMipmapData(Surface data, CubeMapFace face, int mipmapLevel)
             {
                 if(data == null || data.ImageType != ImageType.Bitmap)
                     return false;
+
+                if (face == CubeMapFace.None)
+                    face = CubeMapFace.Positive_X;
 
                 //Ensure we are 32-bit bitmap
                 Surface rgbaData = data;
@@ -546,18 +621,24 @@ namespace TeximpNet.Compression
                     needToDisposeBGRAPtr = true;
                 }
 
+                bool success = false;
+
                 try
                 {
-                    return NvTextureToolsLibrary.Instance.SetInputOptionsMipmapData(m_inputOptionsPtr, bgraPtr, width, height, 1, (int)face, mipmapLevel);
+                    success = NvTextureToolsLibrary.Instance.SetInputOptionsMipmapData(m_inputOptionsPtr, bgraPtr, width, height, 1, (int)face, mipmapLevel);
                 }
                 finally
                 {
+                    SetHasData(face, success);
+
                     if (needToDispose)
                         rgbaData.Dispose();
 
                     if (needToDisposeBGRAPtr)
                         MemoryHelper.FreeMemory(bgraPtr);
-                }        
+                }
+
+                return success;      
             }
 
             private unsafe IntPtr ConvertToBGRA(IntPtr rgbaPtr, int width, int height)
@@ -584,6 +665,12 @@ namespace TeximpNet.Compression
                 return bgraPtr;
             }
 
+            /// <summary>
+            /// Sets input data from a specified surface. This sets the texture layout as a 2D texture
+            /// and the first mipmap with the surface data.
+            /// </summary>
+            /// <param name="data">Bitmap surface data.</param>
+            /// <returns>True if the operation was successful, false otherwise.</returns>
             public bool SetData(Surface data)
             {
                 if (data == null || data.ImageType != ImageType.Bitmap)
@@ -591,7 +678,7 @@ namespace TeximpNet.Compression
 
                 SetTextureLayout(TextureType.Texture2D, data.Width, data.Height, 1);
 
-                bool success = SetMipmapData(data, 0, 0);
+                bool success = SetMipmapData(data, CubeMapFace.Positive_X, 0);
 
                 if (!success)
                     ClearTextureLayout();
@@ -599,20 +686,27 @@ namespace TeximpNet.Compression
                 return success;
             }
 
+            /// <summary>
+            /// Sets input data from an array of surfaces representing a cubemap (6 surfaces total). This sets the texture layout as a 
+            /// cubemap and sets each surface as the first mipmap of each face. All the surface dimensions must match, and there must be
+            /// six faces.
+            /// </summary>
+            /// <param name="cubeFaces">Array of bitmap surfaces, in the order of the CubeMapFace enum (first index is PosX, then NegX, etc).</param>
+            /// <returns>True if the operation was successful, false otherwise.</returns>
             public bool SetData(Surface[] cubeFaces)
             {
-                if (cubeFaces == null)
+                if (cubeFaces == null || cubeFaces.Length != 6)
                     return false;
 
                 Surface first = cubeFaces[0];
 
-                if (first == null)
+                if (first == null || first.ImageType != ImageType.Bitmap)
                     return false;
 
                 for(int i = 1; i < cubeFaces.Length; i++)
                 {
                     Surface next = cubeFaces[i];
-                    if (next == null)
+                    if (next == null || next.ImageType != ImageType.Bitmap)
                         return false;
 
                     if (first.Width != next.Width || first.Height != next.Height)
@@ -713,6 +807,16 @@ namespace TeximpNet.Compression
                 greenScale = m_greenScale;
                 blueScale = m_blueScale;
                 alphaScale = m_alphaScale;
+            }
+
+            private void SetHasData(CubeMapFace face, bool success)
+            {
+                int idx = (int)face;
+
+                if (idx >= m_faceHasData.Count)
+                    return;
+
+                m_faceHasData[idx] = success;
             }
         }
 
