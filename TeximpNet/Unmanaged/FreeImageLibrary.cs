@@ -170,7 +170,7 @@ namespace TeximpNet.Unmanaged
 
         #region Load / Save
 
-        public IntPtr LoadFromFile(String filename, int flags)
+        public IntPtr LoadFromFile(String filename, ImageLoadFlags flags = ImageLoadFlags.Default)
         {
             if(String.IsNullOrEmpty(filename))
                 return IntPtr.Zero;
@@ -188,7 +188,7 @@ namespace TeximpNet.Unmanaged
                 if(format == ImageFormat.Unknown)
                     return IntPtr.Zero;
 
-                return loadFunc(format, name, flags);
+                return loadFunc(format, name, (int) flags);
             }
             finally
             {
@@ -196,7 +196,7 @@ namespace TeximpNet.Unmanaged
             }
         }
 
-        public unsafe IntPtr LoadFromStream(Stream stream, int flags)
+        public unsafe IntPtr LoadFromStream(Stream stream, ImageLoadFlags flags = ImageLoadFlags.Default)
         {
             if (stream == null || !stream.CanRead)
                 return IntPtr.Zero;
@@ -216,11 +216,11 @@ namespace TeximpNet.Unmanaged
                 if (format == ImageFormat.Unknown)
                     return IntPtr.Zero;
 
-                return loadFunc(format, ioPtr, wrapper.GetHandle(), flags);
+                return loadFunc(format, ioPtr, wrapper.GetHandle(), (int) flags);
             }
         }
 
-        public bool SaveToFile(ImageFormat format, IntPtr bitmap, String filename, int flags)
+        public bool SaveToFile(ImageFormat format, IntPtr bitmap, String filename, ImageSaveFlags flags = ImageSaveFlags.Default)
         {
             if(String.IsNullOrEmpty(filename) || format == ImageFormat.Unknown || bitmap == IntPtr.Zero)
                 return false;
@@ -232,7 +232,7 @@ namespace TeximpNet.Unmanaged
 
             try
             {
-                return func(format, bitmap, name, flags);
+                return func(format, bitmap, name, (int) flags);
             }
             finally
             {
@@ -240,7 +240,7 @@ namespace TeximpNet.Unmanaged
             }
         }
 
-        public unsafe bool SaveToStream(Stream stream, ImageFormat format, IntPtr bitmap, int flags)
+        public unsafe bool SaveToStream(ImageFormat format, IntPtr bitmap, Stream stream, ImageSaveFlags flags = ImageSaveFlags.Default)
         {
             if (stream == null || !stream.CanWrite || format == ImageFormat.Unknown || bitmap == IntPtr.Zero)
                 return false;
@@ -252,7 +252,7 @@ namespace TeximpNet.Unmanaged
                 Functions.FreeImage_SaveToHandle func = GetFunction<Functions.FreeImage_SaveToHandle>(FunctionNames.FreeImage_SaveToHandle);
 
                 FreeImageIO io = m_ioHandler.ImageIO;
-                return func(format, bitmap, new IntPtr(&io), wrapper.GetHandle(), flags);
+                return func(format, bitmap, new IntPtr(&io), wrapper.GetHandle(), (int) flags);
             }
         }
 
@@ -693,7 +693,6 @@ namespace TeximpNet.Unmanaged
                 byte swap = colorToReplace.B;
                 colorToReplace.B = colorToReplace.R;
                 colorToReplace.R = swap;
-
 
                 swap = colorToReplaceWith.B;
                 colorToReplaceWith.B = colorToReplaceWith.R;

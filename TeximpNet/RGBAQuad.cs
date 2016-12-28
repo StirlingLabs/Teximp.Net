@@ -24,14 +24,39 @@ using System.Runtime.InteropServices;
 
 namespace TeximpNet
 {
+    /// <summary>
+    /// Represents a 32-bit RGBA color in that order (8 bits per channel).
+    /// </summary>
     [StructLayout(LayoutKind.Sequential)]
     public struct RGBAQuad
     {
+        /// <summary>
+        /// Red component.
+        /// </summary>
         public byte R;
+
+        /// <summary>
+        /// Green component.
+        /// </summary>
         public byte G;
+
+        /// <summary>
+        /// Blue component.
+        /// </summary>
         public byte B;
+
+        /// <summary>
+        /// Alpha component.
+        /// </summary>
         public byte A;
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="RGBAQuad"/> struct.
+        /// </summary>
+        /// <param name="r">Red component.</param>
+        /// <param name="g">Green component.</param>
+        /// <param name="b">Blue component.</param>
+        /// <param name="a">Alpha component.</param>
         public RGBAQuad(byte r, byte g, byte b, byte a)
         {
             R = r;
@@ -40,19 +65,57 @@ namespace TeximpNet
             A = a;
         }
 
+        /// <summary>
+        /// Converts to BGRA order.
+        /// </summary>
+        /// <returns>BGRA ordered color value.</returns>
         public BGRAQuad ToBGRA()
         {
             return new BGRAQuad(B, G, R, A);
         }
+
+        /// <summary>
+        /// Converts to BGRA order.
+        /// </summary>
+        /// <param name="color">BGRA ordered color value</param>
+        public void ToBGRA(out BGRAQuad color)
+        {
+            color = new BGRAQuad(B, G, R, A);
+        }
     }
 
+    /// <summary>
+    /// Represents a 32-bit BGRA color in that order (8 bits per channel).
+    /// </summary>
     public struct BGRAQuad
     {
+        /// <summary>
+        /// Blue component.
+        /// </summary>
         public byte B;
+
+        /// <summary>
+        /// Green component.
+        /// </summary>
         public byte G;
+
+        /// <summary>
+        /// Red component.
+        /// </summary>
         public byte R;
+
+        /// <summary>
+        /// Alpha component.
+        /// </summary>
         public byte A;
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="BGRAQuad"/> struct.
+        /// </summary>
+        /// <param name="b">Blue component.</param>
+        /// <param name="g">Green component.</param>
+        /// <param name="r">Red component.</param>
+        /// <param name="a">Alpha component.</param>
         public BGRAQuad(byte b, byte g, byte r, byte a)
         {
             B = b;
@@ -61,9 +124,22 @@ namespace TeximpNet
             A = a;
         }
 
+        /// <summary>
+        /// Converts to RGBA order.
+        /// </summary>
+        /// <returns>RGBA ordered color value.</returns>
         public RGBAQuad ToRGBA()
         {
             return new RGBAQuad(R, G, B, A);
+        }
+
+        /// <summary>
+        /// Converts to RGBA order.
+        /// </summary>
+        /// <param name="color">RGBA ordered color value.</param>
+        public void ToRGBA(out RGBAQuad color)
+        {
+            color = new RGBAQuad(R, G, B, A);
         }
     }
 }

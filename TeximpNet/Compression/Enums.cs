@@ -62,6 +62,7 @@ namespace TeximpNet.Compression
         /// <summary>
         /// Default block compression format. By default the implicit 1 bit alpha channel is not used
         /// and is always opaque.
+        /// </summary>
         BC1 = DXT1,
 
         /// <summary>
