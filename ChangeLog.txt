@@ -2,6 +2,24 @@
 CHANGELOG
 ----------------------------------------------------------------------
 
+1.1 (12-28-2016)
+
+  - Major documentation pass
+  - Reworked some of the Compression API to be easier to use
+  - Added more methods to Surface, Compression API
+  - Numerous bug fixes
+
+Targets:
+
+FreeImage 3.17.0
+Nvidia Texture Tools 2.1.0
+
+
+
+======================================================================
+
+
+
 1.0 (5-20-2016)
 
 	- Initial release.
