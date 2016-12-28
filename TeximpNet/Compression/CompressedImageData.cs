@@ -21,13 +21,12 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TeximpNet.Compression
 {
+    /// <summary>
+    /// Represents output image data from a <see cref="Compressor"/>.
+    /// </summary>
     public sealed class CompressedImageData : IDisposable
     {
         private int m_width, m_height;
@@ -37,6 +36,9 @@ namespace TeximpNet.Compression
         private int m_sizeInBytes;
         private bool m_isDisposed;
 
+        /// <summary>
+        /// Gets the width of the image.
+        /// </summary>
         public int Width
         {
             get
@@ -45,6 +47,9 @@ namespace TeximpNet.Compression
             }
         }
 
+        /// <summary>
+        /// Gets the height of the image.
+        /// </summary>
         public int Height
         {
             get
@@ -53,6 +58,9 @@ namespace TeximpNet.Compression
             }
         }
 
+        /// <summary>
+        /// Gets the cubemap face of the image, if it is part of a cubemap.
+        /// </summary>
         public CubeMapFace Face
         {
             get
@@ -61,6 +69,9 @@ namespace TeximpNet.Compression
             }
         }
 
+        /// <summary>
+        /// Gets the format of the image.
+        /// </summary>
         public CompressionFormat Format
         {
             get
@@ -69,6 +80,9 @@ namespace TeximpNet.Compression
             }
         }
 
+        /// <summary>
+        /// Gets a pointer to the image data.
+        /// </summary>
         public IntPtr DataPtr
         {
             get
@@ -77,6 +91,9 @@ namespace TeximpNet.Compression
             }
         }
 
+        /// <summary>
+        /// Gets the size of the image data in bytes.
+        /// </summary>
         public int SizeInBytes
         {
             get
@@ -85,6 +102,9 @@ namespace TeximpNet.Compression
             }
         }
 
+        /// <summary>
+        /// Gets whether or not the image data has been disposed.
+        /// </summary>
         public bool IsDisposed
         {
             get
@@ -93,24 +113,44 @@ namespace TeximpNet.Compression
             }
         }
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="CompressedImageData"/> class.
+        /// </summary>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="format">Image format.</param>
         public CompressedImageData(int width, int height, CompressionFormat format) : this(width, height, CubeMapFace.None, format) { }
 
+        /// <summary>
+        /// Constructs a new instance of the <see cref="CompressedImageData"/> class.
+        /// </summary>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="face">Cubemap face the image represents, if it is part of a cubemap.</param>
+        /// <param name="format">Image format.</param>
         public CompressedImageData(int width, int height, CubeMapFace face, CompressionFormat format)
         {
             m_width = width;
             m_height = height;
             m_format = format;
+            m_face = face;
             m_isDisposed = false;
 
             m_sizeInBytes = CalculateSizeInBytes();
             m_data = MemoryHelper.AllocateMemory(m_sizeInBytes);
         }
 
+        /// <summary>
+        /// Finalizes an instance of the <see cref="CompressedImageData" /> class.
+        /// </summary>
         ~CompressedImageData()
         {
             Dispose(false);
         }
 
+        /// <summary>
+        /// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
+        /// </summary>
         public void Dispose()
         {
             Dispose(true);
@@ -118,6 +158,10 @@ namespace TeximpNet.Compression
             GC.SuppressFinalize(this);
         }
 
+        /// <summary>
+        /// Releases unmanaged and - optionally - managed resources.
+        /// </summary>
+        /// <param name="isDisposing"><c>true</c> to release both managed and unmanaged resources; <c>false</c> to release only unmanaged resources.</param>
         private void Dispose(bool isDisposing)
         {
             if(!m_isDisposed)

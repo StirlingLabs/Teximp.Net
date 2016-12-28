@@ -34,7 +34,8 @@ namespace TeximpNet.Unmanaged
     public delegate void BeginImageHandler(int size, int width, int height, int depth, int face, int mipLevel);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    public delegate void OutputHandler(IntPtr data, int size);
+    [return: MarshalAs(UnmanagedType.I1)]
+    public delegate bool OutputHandler(IntPtr data, int size);
 
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     public delegate void EndImageHandler();
