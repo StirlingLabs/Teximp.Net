@@ -83,7 +83,7 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
-    <PostBuildEvent>"$(SolutionDir)TeximpNet.Interop.Generator\bin\$(Configuration)\TeximpNet.Interop.Generator.exe" "$(TargetDir)$(TargetFileName)" "$(ProjectDir)TeximpKey.snk</PostBuildEvent>
+    <PostBuildEvent>"$(SolutionDir)TeximpNet.Interop.Generator\bin\$(Configuration)\TeximpNet.Interop.Generator.exe" "$(TargetDir)$(TargetFileName)" "$(ProjectDir)TeximpKey.snk"</PostBuildEvent>
   </PropertyGroup>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
