@@ -30,7 +30,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("A .NET Wrapper for FreeImage and Nvidia Texture Tools.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nicholas Woodfield")]
-[assembly: AssemblyProduct("TeximpNet.Sample")]
+[assembly: AssemblyProduct("TeximpNet")]
 [assembly: AssemblyCopyright("Copyright © 2016-2017 TeximpNet - Nicholas Woodfield")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

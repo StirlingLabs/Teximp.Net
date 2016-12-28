@@ -792,7 +792,7 @@ namespace TeximpNet.Compression
             /// <param name="data">Bitmap surface. If not <see cref="ImageType.Bitmap"/> this fails, so be sure to convert it before calling.</param>
             /// <param name="face">Cubemap face to set surface to.</param>
             /// <param name="mipmapLevel">Mipmap level to set the surface to.</param>
-            /// <returns></returns>
+            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
             public bool SetMipmapData(Surface data, CubeMapFace face, int mipmapLevel)
             {
                 if(data == null || data.ImageType != ImageType.Bitmap)

@@ -414,6 +414,43 @@ namespace TeximpNet
         }
 
         /// <summary>
+        /// Clones a sub-image of the surface into a new instance. If the surface is disposed or if the rectangle
+        /// is not valid, then this returns null.
+        /// </summary>
+        /// <param name="left">Leftmost texel position of the rectangle.</param>
+        /// <param name="top">Topmost texel position of the rectangle.</param>
+        /// <param name="right">Rightmost texel position of the rectangle.</param>
+        /// <param name="bottom">Bottommost texel position of the rectangle.</param>
+        /// <returns>Subimage surface.</returns>
+        public Surface Clone(int left, int top, int right, int bottom)
+        {
+            if (m_imagePtr == IntPtr.Zero)
+                return null;
+
+            IntPtr subimagePtr = FreeImageLibrary.Instance.Copy(m_imagePtr, left, top, right, bottom);
+            if (subimagePtr == IntPtr.Zero)
+                return null;
+
+            return new Surface(subimagePtr);
+        }
+
+        /// <summary>
+        /// Copies the src bitmap into this bitmap, starting at the left/top texel location.
+        /// </summary>
+        /// <param name="src">Bitmap to copy from.</param>
+        /// <param name="left">Leftmost texel in this bitmap to start copying data to.</param>
+        /// <param name="top">Topmost texel in this bitmap to start copying data to.</param>
+        /// <param name="alphaBlend">0-255 alphablend value, if >= 255 then the src image data overwrites completely.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
+        public bool CopyFrom(Surface src, int left, int top, int alphaBlend = 255)
+        {
+            if (m_imagePtr == IntPtr.Zero || src == null || src.m_imagePtr == IntPtr.Zero)
+                return false;
+
+            return FreeImageLibrary.Instance.Paste(m_imagePtr, src.m_imagePtr, left, top, alphaBlend);
+        }
+
+        /// <summary>
         /// Converts the surface to another image format. This will create a new surface internally
         /// and dispose of the previous one.
         /// </summary>

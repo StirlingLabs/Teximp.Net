@@ -25,15 +25,15 @@
     </VendorName>
     <DocumentationSources>
       <DocumentationSource sourceFile="TeximpNet\bin\Release\TeximpNet.dll" />
-<DocumentationSource sourceFile="TeximpNet\bin\Release\TeximpNet.xml" /></DocumentationSources>
+      <DocumentationSource sourceFile="TeximpNet\bin\Release\TeximpNet.xml" />
+    </DocumentationSources>
     <HelpTitle>TeximpNet Documentation %28January 2017%29</HelpTitle>
     <CopyrightText>Copyright &amp;#169%3b 2012-2017 AssimpNet - Nicholas Woodfield. All rights reserved.</CopyrightText>
     <NamespaceSummaries>
       <NamespaceSummaryItem name="(global)" isDocumented="False" />
-      <NamespaceSummaryItem name="Assimp" isDocumented="True">Main namespace - contains high level AssimpNet objects.</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="Assimp.Configs" isDocumented="True">Contains all the Assimp importer configuration objects.</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="Assimp.Unmanaged" isDocumented="True">Contains the low-level P/Invoke functions and unmanaged structures.</NamespaceSummaryItem>
-    </NamespaceSummaries>
+<NamespaceSummaryItem name="TeximpNet" isDocumented="True">Main namespace - contains high level TeximpNet objects.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="TeximpNet.Compression" isDocumented="True">Contains the Nvidia Texture Tools (NVTT) compression wrapper.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="TeximpNet.Unmanaged" isDocumented="True">Contains the low-level P/Invoke functions and unmanaged structures.</NamespaceSummaryItem></NamespaceSummaries>
     <SyntaxFilters>C#</SyntaxFilters>
     <CollectionTocStyle>Flat</CollectionTocStyle>
     <HeaderText>

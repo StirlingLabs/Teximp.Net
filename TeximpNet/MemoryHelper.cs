@@ -79,7 +79,7 @@ namespace TeximpNet
         /// <param name="width">Width of the first image in the mipmap chain.</param>
         /// <param name="height">Height of the first image in the mipmap chain.</param>
         /// <param name="depth">Depth of the first image in the mipmap chain.</param>
-        /// <returns></returns>
+        /// <returns>Number of mipmaps that can be generated for the image.</returns>
         public static int CountMipmaps(int width, int height, int depth)
         {
             int mipmap = 0;

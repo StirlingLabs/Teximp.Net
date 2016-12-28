@@ -26,7 +26,7 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("TeximpNet.Interop.Generator")]
+[assembly: AssemblyTitle("TeximpNet.Test")]
 [assembly: AssemblyDescription("A .NET Wrapper for FreeImage and Nvidia Texture Tools.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Nicholas Woodfield")]
@@ -41,7 +41,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("4c0d19c6-5f75-490d-8dd1-a58ef6791675")]
+[assembly: Guid("c048eb8d-d4bc-4c69-9767-9978525e9f8c")]
 
 // Version information for an assembly consists of the following four values:
 //
