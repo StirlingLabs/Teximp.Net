@@ -10,8 +10,8 @@
         <projectUrl>http://bitbucket.org/Starnick/teximpnet</projectUrl>
         <iconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</iconUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
-		<summary>A .NET texture and processing library that wraps the FreeImage and Nvidia Texture Tools libraries.</summary>
-        <description>A .NET texture and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.17.0 of FreeImage and version 2.1 of NVTT. </description>
+		<summary>A .NET texture IO and processing library that wraps the FreeImage and Nvidia Texture Tools libraries.</summary>
+        <description>A .NET texture IO and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.17.0 of FreeImage and version 2.1 of NVTT. </description>
         <copyright>Copyright (c) 2016-2017 TeximpNet - Nicholas Woodfield</copyright>
         <language>en-US</language>
         <tags>Importers 3D Content Assets Texture Image Compression DDS DXT</tags>
