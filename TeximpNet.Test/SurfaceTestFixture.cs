@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
+using System.Threading.Tasks;
 
 namespace TeximpNet.Test
 {
@@ -202,6 +203,30 @@ namespace TeximpNet.Test
             
             surfaceFromFile.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/Contrast.jpg"));
             surfaceFromFile.Dispose();
+        }
+
+        [TestCase]
+        public void TestThreadedLibraryLoading()
+        {
+            //Make sure the library is freed first...
+            if (Unmanaged.FreeImageLibrary.Instance.IsLibraryLoaded)
+                Unmanaged.FreeImageLibrary.Instance.FreeLibrary();
+
+            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+
+            List<Task> tasks = new List<Task>();
+
+            for(int i = 0; i < 10; i++)
+            {
+                tasks.Add(Task.Run(() =>
+                {
+                    Surface surfaceFromFile = Surface.LoadFromFile(fileName);
+                    surfaceFromFile.Dispose();
+                }));
+            }
+
+            foreach (Task t in tasks)
+                t.Wait();
         }
     }
 }

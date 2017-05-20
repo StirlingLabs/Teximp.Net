@@ -70,6 +70,8 @@ namespace TeximpNet.Unmanaged
 
     public abstract class UnmanagedLibrary
     {
+        private static Object s_defaultLoadSync = new Object();
+
         private UnmanagedLibraryImplementation m_impl;
         private String m_libraryPath = String.Empty;
 
@@ -191,10 +193,17 @@ namespace TeximpNet.Unmanaged
             return m_impl.GetFunction<T>(funcName);
         }
 
+        /// <summary>
+        /// If library is not explicitly loaded by user, call this when trying to call an unmanaged function to load the unmanaged library
+        /// from the default path. This function is thread safe.
+        /// </summary>
         protected void LoadIfNotLoaded()
         {
-            if (!IsLibraryLoaded)
-                LoadLibrary();
+            lock (s_defaultLoadSync)
+            {
+                if (!IsLibraryLoaded)
+                    LoadLibrary();
+            }
         }
 
         private void OnLibraryLoaded()
