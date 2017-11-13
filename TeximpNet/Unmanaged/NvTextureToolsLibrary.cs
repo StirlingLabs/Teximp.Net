@@ -21,10 +21,6 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using TeximpNet.Compression;
 
@@ -45,14 +41,14 @@ namespace TeximpNet.Unmanaged
         private static readonly Object s_sync = new Object();
 
         /// <summary>
-        /// Default name of the 32-bit unmanaged library. Based on runtime implementation the extension (.dll, .so, .dylib) will be appended automatically.
+        /// Default name of the 32-bit unmanaged library. Based on runtime implementation the prefix ("lib" on non-windows) and extension (.dll, .so, .dylib) will be appended automatically.
         /// </summary>
-        public const String Default32BitPath = "nvtt32";
+        private const String Default32BitName = "nvtt32";
 
         /// <summary>
-        /// Default name of the 64-bit unmanaged library. Based on runtime implementation the extension (.dll, .so, .dylib) will be appended automatically.
+        /// Default name of the 64-bit unmanaged library. Based on runtime implementation the prefix ("lib" on non-windows) and extension (.dll, .so, .dylib) will be appended automatically.
         /// </summary>
-        public const String Default64BitPath = "nvtt64";
+        private const String Default64BitName = "nvtt64";
 
         private static NvTextureToolsLibrary s_instance;
 
@@ -70,11 +66,12 @@ namespace TeximpNet.Unmanaged
             }
         }
 
-        private NvTextureToolsLibrary(String default32BitPath, String default64BitPath, Type[] unmanagedFunctionDelegateTypes) : base(default32BitPath, default64BitPath, unmanagedFunctionDelegateTypes) { }
+        private NvTextureToolsLibrary(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes) 
+            : base(default32BitName, default64BitName, unmanagedFunctionDelegateTypes) { }
 
         private static NvTextureToolsLibrary CreateInstance()
         {
-            return new NvTextureToolsLibrary(Default32BitPath, Default64BitPath, typeof(Functions).GetNestedTypes());
+            return new NvTextureToolsLibrary(Default32BitName, Default64BitName, Helper.GetNestedTypes(typeof(Functions)));
         }
 
         #region Input options

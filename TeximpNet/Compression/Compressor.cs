@@ -243,8 +243,8 @@ namespace TeximpNet.Compression
                 {
                     int count = Math.Min(m_tempBuffer.Length, size);
                     size -= count;
-
-                    MemoryHelper.CopyMemory(m_pinnedTempBufferPtr, data + offset, count);
+                    
+                    MemoryHelper.CopyMemory(m_pinnedTempBufferPtr, MemoryHelper.AddIntPtr(data, offset), count);
                     offset += count;
 
                     m_currentStream.Write(m_tempBuffer, 0, count);
@@ -254,7 +254,7 @@ namespace TeximpNet.Compression
             {
                 if (m_currentMip != null)
                 {
-                    MemoryHelper.CopyMemory(m_currentMip.DataPtr + m_currentBytePos, data, size);
+                    MemoryHelper.CopyMemory(MemoryHelper.AddIntPtr(m_currentMip.DataPtr, m_currentBytePos), data, size);
                     m_currentBytePos += size;
                 }
             }

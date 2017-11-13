@@ -21,12 +21,8 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Runtime.InteropServices;
 using System.IO;
+using System.Runtime.InteropServices;
 
 namespace TeximpNet.Unmanaged
 {
@@ -36,14 +32,14 @@ namespace TeximpNet.Unmanaged
         private bool? m_isLittleEndian;
 
         /// <summary>
-        /// Default name of the 32-bit unmanaged library. Based on runtime implementation the extension (.dll, .so, .dylib) will be appended automatically.
+        /// Default name of the 32-bit unmanaged library. Based on runtime implementation the prefix ("lib" on non-windows) and extension (.dll, .so, .dylib) will be appended automatically.
         /// </summary>
-        public const String Default32BitPath = "FreeImage32";
+        private const String Default32BitName = "FreeImage32";
 
         /// <summary>
-        /// Default name of the 64-bit unmanaged library. Based on runtime implementation the extension (.dll, .so, .dylib) will be appended automatically.
+        /// Default name of the 64-bit unmanaged library. Based on runtime implementation the prefix ("lib" on non-windows) and extension (.dll, .so, .dylib) will be appended automatically.
         /// </summary>
-        public const String Default64BitPath = "FreeImage64";
+        private const String Default64BitName = "FreeImage64";
 
         private static FreeImageLibrary s_instance;
 
@@ -82,15 +78,15 @@ namespace TeximpNet.Unmanaged
             }
         }
 
-        private FreeImageLibrary(String default32BitPath, String default64BitPath, Type[] unmanagedFunctionDelegateTypes) 
-            : base(default32BitPath, default64BitPath, unmanagedFunctionDelegateTypes)
+        private FreeImageLibrary(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes) 
+            : base(default32BitName, default64BitName, unmanagedFunctionDelegateTypes)
         {
             m_ioHandler = new FreeImageIOHandler(Is64Bit && (GetPlatform() != Platform.Windows));
         }
 
         private static FreeImageLibrary CreateInstance()
         {
-            return new FreeImageLibrary(Default32BitPath, Default64BitPath, typeof(Functions).GetNestedTypes());
+            return new FreeImageLibrary(Default32BitName, Default64BitName, Helper.GetNestedTypes(typeof(Functions)));
         }
 
         #region Allocate / Clone / Unload
@@ -1097,7 +1093,7 @@ namespace TeximpNet.Unmanaged
                     }
 
                     MemoryHelper.CopyMemory(buffer, m_tempBufferPtr, read);
-                    buffer += read;
+                    buffer = MemoryHelper.AddIntPtr(buffer, read);
 
                     readCount++;
                 }
@@ -1114,7 +1110,7 @@ namespace TeximpNet.Unmanaged
                 while(writeCount < count)
                 {
                     MemoryHelper.CopyMemory(m_tempBufferPtr, buffer, (int) size);
-                    buffer += (int)size;
+                    buffer = MemoryHelper.AddIntPtr(buffer, (int)size);
 
                     try
                     {
@@ -1233,10 +1229,10 @@ namespace TeximpNet.Unmanaged
                 m_seekProc = (isLong64Bits) ? (Delegate) new FreeImageIO_SeekProc64(SeekProc64) : (Delegate) new FreeImageIO_SeekProc32(SeekProc32);
                 m_tellProc = (isLong64Bits) ? (Delegate) new FreeImageIO_TellProc64(TellProc64) : (Delegate) new FreeImageIO_TellProc32(TellProc32);
 
-                m_imageIO.ReadProc = Marshal.GetFunctionPointerForDelegate(m_readProc);
-                m_imageIO.WriteProc = Marshal.GetFunctionPointerForDelegate(m_writeProc);
-                m_imageIO.SeekProc = Marshal.GetFunctionPointerForDelegate(m_seekProc);
-                m_imageIO.TellProc = Marshal.GetFunctionPointerForDelegate(m_tellProc);
+                m_imageIO.ReadProc = Helper.GetFunctionPointerForDelegate(m_readProc);
+                m_imageIO.WriteProc = Helper.GetFunctionPointerForDelegate(m_writeProc);
+                m_imageIO.SeekProc = Helper.GetFunctionPointerForDelegate(m_seekProc);
+                m_imageIO.TellProc = Helper.GetFunctionPointerForDelegate(m_tellProc);
             }
 
             private unsafe uint ReadProc(IntPtr buffer, uint size, uint count, IntPtr ioHandle)

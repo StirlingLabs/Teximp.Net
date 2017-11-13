@@ -23,7 +23,7 @@
 using System;
 using System.IO;
 using System.Reflection;
-using NUnit.Framework;
+using Xunit;
 
 namespace TeximpNet.Test
 {
@@ -43,16 +43,15 @@ namespace TeximpNet.Test
             {
                 if (m_rootPath == null)
                 {
+                    /*
                     Assembly entryAssembly = Assembly.GetEntryAssembly();
                     String dirPath = String.Empty;
-
-                    if (entryAssembly == null)
-                        entryAssembly = Assembly.GetCallingAssembly();
 
                     if (entryAssembly != null)
                         dirPath = Path.GetDirectoryName(entryAssembly.Location);
 
-                    m_rootPath = dirPath;
+                    m_rootPath = dirPath;*/
+                    m_rootPath = AppContext.BaseDirectory;
                 }
 
                 return m_rootPath;
@@ -61,12 +60,12 @@ namespace TeximpNet.Test
 
         public static void AssertEquals(float expected, float actual)
         {
-            Assert.IsTrue(Math.Abs(expected - actual) <= Tolerance);
+            Assert.True(Math.Abs(expected - actual) <= Tolerance);
         }
 
         public static void AssertEquals(float expected, float actual, String msg)
         {
-            Assert.IsTrue(Math.Abs(expected - actual) <= Tolerance, msg);
+            Assert.True(Math.Abs(expected - actual) <= Tolerance, msg);
         }
     }
 }

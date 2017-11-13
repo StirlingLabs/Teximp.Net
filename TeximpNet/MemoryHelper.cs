@@ -230,6 +230,28 @@ namespace TeximpNet
         }
 
         /// <summary>
+        /// Casts the pointer to a by-ref value of the specified type.
+        /// </summary>
+        /// <typeparam name="T">Type of data.</typeparam>
+        /// <param name="ptr">Pointer</param>
+        /// <returns>By-ref value.</returns>
+        public static ref T AsRef<T>(IntPtr ptr) where T : struct
+        {
+            return ref MemoryInterop.AsRef<T>(ptr);
+        }
+
+        /// <summary>
+        /// Casts the by-ref value of the specified type to a pointer. Note: This does not do any sort of pinning.
+        /// </summary>
+        /// <typeparam name="T">Type of data.</typeparam>
+        /// <param name="src">By-ref value.</param>
+        /// <returns>Pointer to the memory location.</returns>
+        public static IntPtr AsPointer<T>(ref T src) where T : struct
+        {
+            return MemoryInterop.AsPointerInline<T>(ref src);
+        }
+
+        /// <summary>
         /// Computes a hash code using the <a href="http://bretm.home.comcast.net/~bretm/hash/6.html">FNV modified algorithm</a>m.
         /// </summary>
         /// <param name="data">Byte data to hash.</param>
@@ -340,7 +362,7 @@ namespace TeximpNet
         /// <param name="sizeInBytesToClear">Number of bytes, starting from the memory pointer, to clear.</param>
         public static unsafe void ClearMemory(IntPtr memoryPtr, byte clearValue, int sizeInBytesToClear)
         {
-            InternalInterop.MemSetInline((void*) memoryPtr, clearValue, sizeInBytesToClear);
+            MemoryInterop.MemSetUnalignedInline((void*) memoryPtr, clearValue, (uint) sizeInBytesToClear);
         }
 
         /// <summary>
@@ -350,7 +372,7 @@ namespace TeximpNet
         /// <returns>Size of the struct in bytes.</returns>
         public static unsafe int SizeOf<T>() where T : struct
         {
-            return InternalInterop.SizeOfInline<T>();
+            return MemoryInterop.SizeOfInline<T>();
         }
 
         /// <summary>
@@ -361,7 +383,7 @@ namespace TeximpNet
         /// <returns>Total size, in bytes, of the array's contents.</returns>
         public static int SizeOf<T>(T[] array) where T : struct
         {
-            return array == null ? 0 : array.Length * InternalInterop.SizeOfInline<T>();
+            return array == null ? 0 : array.Length * MemoryInterop.SizeOfInline<T>();
         }
 
         /// <summary>
@@ -383,7 +405,7 @@ namespace TeximpNet
         /// <param name="sizeInBytesToCopy">Number of bytes to copy</param>
         public static unsafe void CopyMemory(IntPtr pDest, IntPtr pSrc, int sizeInBytesToCopy)
         {
-            InternalInterop.MemCopyInline((void*) pDest, (void*) pSrc, sizeInBytesToCopy);
+            MemoryInterop.MemCopyUnalignedInline((void*) pDest, (void*) pSrc, (uint) sizeInBytesToCopy);
         }
 
         /// <summary>
@@ -426,7 +448,7 @@ namespace TeximpNet
             if(source == null || source.Length == 0)
                 return null;
 
-            byte[] buffer = new byte[InternalInterop.SizeOfInline<T>() * source.Length];
+            byte[] buffer = new byte[MemoryInterop.SizeOfInline<T>() * source.Length];
 
             fixed (void* pBuffer = buffer)
             {
@@ -447,7 +469,7 @@ namespace TeximpNet
             if(source == null || source.Length == 0)
                 return null;
 
-            T[] buffer = new T[(int) Math.Floor(((double) source.Length) / ((double) InternalInterop.SizeOfInline<T>()))];
+            T[] buffer = new T[(int) Math.Floor(((double) source.Length) / ((double) MemoryInterop.SizeOfInline<T>()))];
 
             fixed (void* pBuffer = source)
             {
@@ -471,7 +493,7 @@ namespace TeximpNet
             if(srcArray == null || srcArray.Length == 0 || destArray == null || destArray.Length == 0)
                 return;
 
-            int byteCount = InternalInterop.SizeOfInline<T>() * count;
+            int byteCount = MemoryInterop.SizeOfInline<T>() * count;
 
             if(srcStartIndex < 0 || (srcStartIndex + byteCount) > srcArray.Length || destStartIndex < 0 || (destStartIndex + count) > destArray.Length)
                 return;
@@ -496,7 +518,7 @@ namespace TeximpNet
             if(srcArray == null || srcArray.Length == 0 || destArray == null || destArray.Length == 0)
                 return;
 
-            int byteCount = InternalInterop.SizeOfInline<T>() * count;
+            int byteCount = MemoryInterop.SizeOfInline<T>() * count;
 
             if(srcStartIndex < 0 || (srcStartIndex + count) > srcArray.Length || destStartIndex < 0 || (destStartIndex + byteCount) > destArray.Length)
                 return;
@@ -517,7 +539,7 @@ namespace TeximpNet
         /// <param name="count">Number of elements to copy</param>
         public static unsafe void Read<T>(IntPtr pSrc, T[] data, int startIndexInArray, int count) where T : struct
         {
-            InternalInterop.ReadArray<T>(pSrc, data, startIndexInArray, count);
+            MemoryInterop.ReadArrayUnaligned<T>(pSrc, data, startIndexInArray, count);
         }
 
         /// <summary>
@@ -528,7 +550,7 @@ namespace TeximpNet
         /// <returns>The read value</returns>
         public static unsafe T Read<T>(IntPtr pSrc) where T : struct
         {
-            return InternalInterop.ReadInline<T>((void*) pSrc);
+            return MemoryInterop.ReadInline<T>((void*) pSrc);
         }
 
         /// <summary>
@@ -541,7 +563,7 @@ namespace TeximpNet
         /// <param name="count">Number of elements to copy</param>
         public static unsafe void Write<T>(IntPtr pDest, T[] data, int startIndexInArray, int count) where T : struct
         {
-            InternalInterop.WriteArray<T>(pDest, data, startIndexInArray, count);
+            MemoryInterop.WriteArrayUnaligned<T>(pDest, data, startIndexInArray, count);
         }
 
         /// <summary>
@@ -552,7 +574,7 @@ namespace TeximpNet
         /// <param name="data">The value to write</param>
         public static unsafe void Write<T>(IntPtr pDest, ref T data) where T : struct
         {
-            InternalInterop.WriteInline<T>((void*) pDest, ref data);
+            MemoryInterop.WriteInline<T>((void*) pDest, ref data);
         }
     }
 }
