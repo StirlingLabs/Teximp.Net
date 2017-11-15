@@ -1,2 +1,2 @@
 FreeImage 3.17.0
-Nvidia Texture Tools 2.1
+Nvidia Texture Tools 2.1.1

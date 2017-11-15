@@ -30,8 +30,10 @@
     <Content Include="..\Docs\TeximpNet Documentation %28January 2017%29.chm" Link="TeximpNet Documentation %28January 2017%29.chm" PackagePath="" />
     <Content Include="..\libs\FreeImage\win-x64\FreeImage64.dll" Link="build\native\win-x64\FreeImage64.dll" PackagePath="build\native\win-x64\" />
     <Content Include="..\libs\FreeImage\win-x86\FreeImage32.dll" Link="build\native\win-x86\FreeImage32.dll" PackagePath="build\native\win-x86\" />
+    <Content Include="..\libs\FreeImage\linux-x64\libFreeImage64.so" Link="build\native\linux-x64\libFreeImage64.so" PackagePath="build\native\linux-x64\" />
     <Content Include="..\libs\NvidiaTextureTools\win-x64\nvtt64.dll" Link="build\native\win-x64\nvtt64.dll" PackagePath="build\native\win-x64\" />
     <Content Include="..\libs\NvidiaTextureTools\win-x86\nvtt32.dll" Link="build\native\win-x86\nvtt32.dll" PackagePath="build\native\win-x86\" />
+    <Content Include="..\libs\NvidiaTextureTools\linux-x64\libnvtt64.so" Link="build\native\linux-x64\libnvtt64.so" PackagePath="build\native\linux-x64\" />
     <Content Include="TeximpNet.targets" PackagePath="build\" />
   </ItemGroup>
 
