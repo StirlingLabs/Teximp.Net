@@ -1,0 +1,5 @@
+﻿<Window xmlns="https://github.com/avaloniaui" MinWidth="640" MinHeight="480" Title="Bunny Mipchain">
+  <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto">
+    <Canvas Name="Mips" Background="#505050" />
+  </ScrollViewer>
+</Window>

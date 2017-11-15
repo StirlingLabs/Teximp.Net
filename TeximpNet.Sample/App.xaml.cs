@@ -20,55 +20,47 @@
 * THE SOFTWARE.
 */
 
-using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Diagnostics;
+using Avalonia.Logging.Serilog;
+using Avalonia.Markup.Xaml;
+using Serilog;
 
 namespace TeximpNet.Sample
 {
-    public partial class MipViewerForm : Form
+    class App : Application
     {
-        public MipViewerForm(List<Bitmap> mipChain)
+
+        public override void Initialize()
         {
-            InitializeComponent();
-
-            SuspendLayout();
-
-            Size = Screen.FromControl(this).WorkingArea.Size;
-            CenterToScreen();
-
-            BackColor = Color.FromArgb(255, 80, 80, 80);
-            ScrollableControl panel = new ScrollableControl();
-            panel.Dock = DockStyle.Fill;
-            Controls.Add(panel);
-
-            int offset = 0;
-            foreach(Bitmap image in mipChain)
-            {
-                PictureBox box = new PictureBox();
-                box.Image = image;
-                box.Width = image.Width;
-                box.Height = image.Height;
-
-                box.Left = offset;
-                offset += image.Width;
-
-                panel.Controls.Add(box);
-            }
-
-            panel.AutoScroll = true;
-
-            panel.ResumeLayout();
-
-            ResumeLayout();
+            AvaloniaXamlLoader.Load(this);
+            base.Initialize();
         }
 
-        protected override void OnKeyDown(KeyEventArgs e)
+        static void Main(string[] args)
         {
-            base.OnKeyDown(e);
+            InitializeLogging();
+            AppBuilder.Configure<App>()
+                .UsePlatformDetect()
+                .Start<MainWindow>();
+        }
 
-            if (e.KeyCode == Keys.Escape)
-                Close();
+        public static void AttachDevTools(Window window)
+        {
+#if DEBUG
+            DevTools.Attach(window);
+#endif
+        }
+
+        private static void InitializeLogging()
+        {
+#if DEBUG
+            SerilogLogger.Initialize(new LoggerConfiguration()
+                .MinimumLevel.Warning()
+                .WriteTo.Trace(outputTemplate: "{Area}: {Message}")
+                .CreateLogger());
+#endif
         }
     }
 }
