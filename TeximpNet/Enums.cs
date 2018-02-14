@@ -92,7 +92,7 @@ namespace TeximpNet
         /// <summary>
         /// 128-bit RGBA float image: 4 channels x 32-bit IEEE floating point.
         /// </summary>
-        RFBAF = 12
+        RGBAF = 12
     }
 
     /// <summary>
@@ -756,6 +756,36 @@ namespace TeximpNet
         /// <summary>
         /// Converts a bitmap to an 8-bit greyscale image with a linear ramp.
         /// </summary>
-        ToGreyscale
+        ToGreyscale,
+
+        /// <summary>
+        /// Converts a bitmap to an array of 32-bit IEEE floating point values.
+        /// </summary>
+        ToFloat,
+
+        /// <summary>
+        /// Converts a bitmap to an array of unsigned 16-bit integers.
+        /// </summary>
+        ToUInt16,
+
+        /// <summary>
+        /// Converts a bitmap to a 96-bit RGB float image, where 3 channels x 32-bit IEEE floating point.
+        /// </summary>
+        ToRGBF,
+
+        /// <summary>
+        /// Converts a bitmap to a 128-bit RGBA float image, where 4 channels x 32-bit IEEE floating point.
+        /// </summary>
+        ToRGBAF,
+
+        /// <summary>
+        /// Converts a bitmap to a 48-bit RGB image, where 3 channels x 16-bit.
+        /// </summary>
+        ToRGB16,
+
+        /// <summary>
+        /// Converts a bitmap to a 64-bit RGBA image, where 4 channels x 16-bit.
+        /// </summary>
+        ToRGBA16
     }
 }

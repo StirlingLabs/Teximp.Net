@@ -236,5 +236,38 @@ namespace TeximpNet.Test
             foreach (Task t in tasks)
                 t.Wait();
         }
+
+        [Fact]
+        public void TestLoadPalette()
+        {
+            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/256Color.bmp");
+
+            Surface surface = Surface.LoadFromFile(fileName);
+
+            Assert.True(surface != null);
+            Assert.True(surface.HasPalette);
+            Assert.True(surface.PaletteColorCount == 256);
+            surface.Dispose();
+        }
+
+        [Fact]
+        public void TestConversion()
+        {
+            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/256Color.bmp");
+
+            Surface surface = Surface.LoadFromFile(fileName);
+
+            List<ImageConversion> formats = new List<ImageConversion>(Enum.GetValues(typeof(ImageConversion)) as ImageConversion[]);
+
+            foreach(ImageConversion format in formats)
+            {
+                using (Surface clone = surface.Clone())
+                {
+                    Assert.True(clone.ConvertTo(format));
+                }
+            }
+
+            surface.Dispose();
+        }
     }
 }

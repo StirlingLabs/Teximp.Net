@@ -219,7 +219,7 @@ namespace TeximpNet
         }
 
         /// <summary>
-        /// Gets a pointer to to bitmap data.
+        /// Gets a pointer to bitmap data.
         /// </summary>
         public IntPtr DataPtr
         {
@@ -229,6 +229,46 @@ namespace TeximpNet
                     return IntPtr.Zero;
 
                 return FreeImageLibrary.Instance.GetData(m_imagePtr);
+            }
+        }
+
+        /// <summary>
+        /// Gets a pointer to palette data. The total number of colors in the palette can be determined by <see cref="PaletteColorCount"/>. Each color is comprised of 4 bytes, one for each channel (Red, Green, Blue, Alpha). BGRA or RGBA color ordering
+        /// is determined by <see cref="IsBGRAOrder"/>.
+        /// </summary>
+        public IntPtr PalettePtr
+        {
+            get
+            {
+                if (m_imagePtr == IntPtr.Zero)
+                    return IntPtr.Zero;
+
+                return FreeImageLibrary.Instance.GetPalette(m_imagePtr);
+            }
+        }
+
+        /// <summary>
+        /// Gets if the image has a color palette or not.
+        /// </summary>
+        public bool HasPalette
+        {
+            get
+            {
+                return PalettePtr != IntPtr.Zero;
+            }
+        }
+
+        /// <summary>
+        /// If the image uses a palette, get the number of colors in the palette. If no palette is used, this will be zero.
+        /// </summary>
+        public int PaletteColorCount
+        {
+            get
+            {
+                if (m_imagePtr == IntPtr.Zero)
+                    return 0;
+
+                return (int) FreeImageLibrary.Instance.GetPaletteColorCount(m_imagePtr);
             }
         }
 
@@ -482,6 +522,24 @@ namespace TeximpNet
                     break;
                 case ImageConversion.ToGreyscale:
                     newImagePtr = FreeImageLibrary.Instance.ConvertToGreyscale(m_imagePtr);
+                    break;
+                case ImageConversion.ToFloat:
+                    newImagePtr = FreeImageLibrary.Instance.ConvertToFloat(m_imagePtr);
+                    break;
+                case ImageConversion.ToUInt16:
+                    newImagePtr = FreeImageLibrary.Instance.ConvertToUINT16(m_imagePtr);
+                    break;
+                case ImageConversion.ToRGBF:
+                    newImagePtr = FreeImageLibrary.Instance.ConvertToRGBF(m_imagePtr);
+                    break;
+                case ImageConversion.ToRGBAF:
+                    newImagePtr = FreeImageLibrary.Instance.ConvertToRGBAF(m_imagePtr);
+                    break;
+                case ImageConversion.ToRGB16:
+                    newImagePtr = FreeImageLibrary.Instance.ConvertToRGB16(m_imagePtr);
+                    break;
+                case ImageConversion.ToRGBA16:
+                    newImagePtr = FreeImageLibrary.Instance.ConvertToRGBA16(m_imagePtr);
                     break;
                 default:
                     return false;

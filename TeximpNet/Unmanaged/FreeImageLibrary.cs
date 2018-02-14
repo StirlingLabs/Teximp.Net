@@ -341,6 +341,30 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        public IntPtr GetPalette(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_GetPalette func = GetFunction<Functions.FreeImage_GetPalette>(FunctionNames.FreeImage_GetPalette);
+
+            return func(bitmap);
+        }
+
+        public uint GetPaletteColorCount(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return 0;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_GetColorsUsed func = GetFunction<Functions.FreeImage_GetColorsUsed>(FunctionNames.FreeImage_GetColorsUsed);
+
+            return func(bitmap);
+        }
+
         public IntPtr GetScanLine(IntPtr bitmap, int scanline)
         {
             if(bitmap == IntPtr.Zero)
@@ -533,6 +557,78 @@ namespace TeximpNet.Unmanaged
             LoadIfNotLoaded();
 
             Functions.FreeImage_ConvertToGreyscale func = GetFunction<Functions.FreeImage_ConvertToGreyscale>(FunctionNames.FreeImage_ConvertToGreyscale);
+
+            return func(bitmap);
+        }
+
+        public IntPtr ConvertToFloat(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_ConvertToFloat func = GetFunction<Functions.FreeImage_ConvertToFloat>(FunctionNames.FreeImage_ConvertToFloat);
+
+            return func(bitmap);
+        }
+
+        public IntPtr ConvertToRGBF(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_ConvertToRGBF func = GetFunction<Functions.FreeImage_ConvertToRGBF>(FunctionNames.FreeImage_ConvertToRGBF);
+
+            return func(bitmap);
+        }
+
+        public IntPtr ConvertToRGBAF(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_ConvertToRGBAF func = GetFunction<Functions.FreeImage_ConvertToRGBAF>(FunctionNames.FreeImage_ConvertToRGBAF);
+
+            return func(bitmap);
+        }
+
+        public IntPtr ConvertToUINT16(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_ConvertToUINT16 func = GetFunction<Functions.FreeImage_ConvertToUINT16>(FunctionNames.FreeImage_ConvertToUINT16);
+
+            return func(bitmap);
+        }
+
+        public IntPtr ConvertToRGB16(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_ConvertToRGB16 func = GetFunction<Functions.FreeImage_ConvertToRGB16>(FunctionNames.FreeImage_ConvertToRGB16);
+
+            return func(bitmap);
+        }
+
+        public IntPtr ConvertToRGBA16(IntPtr bitmap)
+        {
+            if (bitmap == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            LoadIfNotLoaded();
+
+            Functions.FreeImage_ConvertToRGBA16 func = GetFunction<Functions.FreeImage_ConvertToRGBA16>(FunctionNames.FreeImage_ConvertToRGBA16);
 
             return func(bitmap);
         }
@@ -788,6 +884,8 @@ namespace TeximpNet.Unmanaged
             public const String FreeImage_GetBlueMask = "FreeImage_GetBlueMask";
             public const String FreeImage_IsTransparent = "FreeImage_IsTransparent";
             public const String FreeImage_GetColorType = "FreeImage_GetColorType";
+            public const String FreeImage_GetPalette = "FreeImage_GetPalette";
+            public const String FreeImage_GetColorsUsed = "FreeImage_GetColorsUsed";
 
             #endregion
 
@@ -803,6 +901,12 @@ namespace TeximpNet.Unmanaged
             public const String FreeImage_ConvertTo16Bits565 = "FreeImage_ConvertTo16Bits565";
             public const String FreeImage_ConvertTo24Bits = "FreeImage_ConvertTo24Bits";
             public const String FreeImage_ConvertTo32Bits = "FreeImage_ConvertTo32Bits";
+            public const String FreeImage_ConvertToFloat = "FreeImage_ConvertToFloat";
+            public const String FreeImage_ConvertToRGBF = "FreeImage_ConvertToRGBF";
+            public const String FreeImage_ConvertToRGBAF = "FreeImage_ConvertToRGBAF";
+            public const String FreeImage_ConvertToUINT16 = "FreeImage_ConvertToUINT16";
+            public const String FreeImage_ConvertToRGB16 = "FreeImage_ConvertToRGB16";
+            public const String FreeImage_ConvertToRGBA16 = "FreeImage_ConvertToRGBA16";
 
             #endregion
 
@@ -928,6 +1032,12 @@ namespace TeximpNet.Unmanaged
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_GetColorType)]
             public delegate ImageColorType FreeImage_GetColorType(IntPtr bitmap);
 
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_GetPalette)]
+            public delegate IntPtr FreeImage_GetPalette(IntPtr bitmap);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_GetColorsUsed)]
+            public delegate uint FreeImage_GetColorsUsed(IntPtr bitmap);
+
             #endregion
 
             #region Conversion routines
@@ -952,6 +1062,24 @@ namespace TeximpNet.Unmanaged
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToGreyscale)]
             public delegate IntPtr FreeImage_ConvertToGreyscale(IntPtr bitmap);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToFloat)]
+            public delegate IntPtr FreeImage_ConvertToFloat(IntPtr bitmap);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToRGBF)]
+            public delegate IntPtr FreeImage_ConvertToRGBF(IntPtr bitmap);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToRGBAF)]
+            public delegate IntPtr FreeImage_ConvertToRGBAF(IntPtr bitmap);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToUINT16)]
+            public delegate IntPtr FreeImage_ConvertToUINT16(IntPtr bitmap);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToRGB16)]
+            public delegate IntPtr FreeImage_ConvertToRGB16(IntPtr bitmap);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToRGBA16)]
+            public delegate IntPtr FreeImage_ConvertToRGBA16(IntPtr bitmap);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToRawBits)]
             public delegate void FreeImage_ConvertToRawBits(IntPtr data, IntPtr bitmap, int pitch, uint bpp, uint red_mask, uint green_mask, uint blue_mask, [In, MarshalAs(UnmanagedType.Bool)] bool topdown);

@@ -73,6 +73,7 @@ namespace TeximpNet.Unmanaged
 
         private UnmanagedLibraryImplementation m_impl;
         private String m_libraryPath = String.Empty;
+        private volatile bool m_checkNeedsLoading = true;
 
         public event EventHandler LibraryLoaded;
 
@@ -176,6 +177,7 @@ namespace TeximpNet.Unmanaged
 
                 m_impl.FreeLibrary();
                 m_libraryPath = String.Empty;
+                m_checkNeedsLoading = true;
 
                 return true;
             }
@@ -194,10 +196,16 @@ namespace TeximpNet.Unmanaged
         /// </summary>
         protected void LoadIfNotLoaded()
         {
+            //Check the loading flag so we don't have to lock every time we want to talk to the native library...
+            if (!m_checkNeedsLoading)
+                return;
+
             lock (s_defaultLoadSync)
             {
                 if (!IsLibraryLoaded)
                     LoadLibrary();
+
+                m_checkNeedsLoading = false;
             }
         }
 
