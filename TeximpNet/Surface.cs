@@ -379,6 +379,23 @@ namespace TeximpNet
         }
 
         /// <summary>
+        /// Loads a surface from a file.
+        /// </summary>
+        /// <param name="filename">Name of file to load.</param>
+        /// <param name="flipImage">Flip the image, by default FreeImage loads an image with the origin lower-left. Some applications may expect the image origin
+        /// to be upper-left.</param>
+        /// <param name="flags">Optional flags, by default this is <see cref="ImageLoadFlags.Default"/>.</param>
+        /// <returns>Loaded surface, or null if there was an error in loading.</returns>
+        public static Surface LoadFromFile(String filename, bool flipImage, ImageLoadFlags flags = ImageLoadFlags.Default)
+        {
+            Surface surface = LoadFromFile(filename, flags);
+            if (surface != null && flipImage)
+                surface.FlipVertically();
+
+            return surface;
+        }
+
+        /// <summary>
         /// Loads a surface from a stream.
         /// </summary>
         /// <param name="stream">Stream to load data from.</param>
@@ -391,6 +408,23 @@ namespace TeximpNet
                 return null;
 
             return new Surface(imagePtr);
+        }
+
+        /// <summary>
+        /// Loads a surface from a stream.
+        /// </summary>
+        /// <param name="stream">Stream to load data from.</param>
+        /// <param name="flipImage">Flip the image, by default FreeImage loads an image with the origin lower-left. Some applications may expect the image origin
+        /// to be upper-left.</param>
+        /// <param name="flags">Optional flags, by default this is <see cref="ImageLoadFlags.Default"/>.</param>
+        /// <returns>Loaded surface, or null if there was an error in loading.</returns>
+        public static Surface LoadFromStream(Stream stream, bool flipImage, ImageLoadFlags flags = ImageLoadFlags.Default)
+        {
+            Surface surface = LoadFromStream(stream, flags);
+            if (surface != null && flipImage)
+                surface.FlipVertically();
+
+            return surface;
         }
 
         /// <summary>
