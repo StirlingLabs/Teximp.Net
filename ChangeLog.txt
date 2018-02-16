@@ -2,6 +2,30 @@
 CHANGELOG
 ----------------------------------------------------------------------
 
+1.2 (2/14/2018)
+
+	- Now available on .NET Core!! (.NET Standard 1.3 target). Nuget package also supports .NET Framework 3.5 and 4.x targets.
+	- Shipping Linux binaries (x64 only) for NVVT and FreeImage (tested on Ubuntu 17.10)
+	- Default native library names are handled slightly differently now. The default name is w/o an extension, and each platform initializer will append a prefix/extension
+	- Unmanaged library loading is now thread safe
+	- Simplified Compressor SetData/SetMipmapData API, they also properly handle input images that are padded
+	- Can set 3D image to compressor, 2D array (non-cube) are possible, but the C-API doesn't expose setting an array count yet...
+	- Added functions to Surface to easily convert from/to System.Drawing.Bitmap
+	- Added some more formats to convert FreeImage surfaces to
+	- Added queries for bitmap palettes
+
+Targets:
+
+FreeImage 3.17.0
+Nvidia Texture Tools 2.1.1
+
+
+
+
+======================================================================
+
+
+
 1.1 (12-28-2016)
 
   - Major documentation pass

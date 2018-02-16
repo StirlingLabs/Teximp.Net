@@ -23,50 +23,24 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Xunit;
 using System.Threading.Tasks;
+using Xunit;
 
 namespace TeximpNet.Test
 {
-    public class SurfaceTestFixture
+    public class SurfaceTestFixture : TeximpTestFixture
     {
-        public SurfaceTestFixture()
-        {
-            Setup();
-        }
-
-        private void Setup()
-        {
-            //Just test out explicit lib loading
-            TeximpNet.Unmanaged.FreeImageLibrary lib = TeximpNet.Unmanaged.FreeImageLibrary.Instance;
-            if (!lib.IsLibraryLoaded)
-                lib.LoadLibrary();
-
-            String outputPath = Path.Combine(TestHelper.RootPath, "Output");
-
-            if (!Directory.Exists(outputPath))
-                Directory.CreateDirectory(outputPath);
-
-            IEnumerable<String> filePaths = Directory.GetFiles(outputPath);
-
-            foreach (String filePath in filePaths)
-            {
-                if (File.Exists(filePath))
-                    File.Delete(filePath);
-            }
-        }
-
         [Fact]
         public void TestSurfaceLoadSave()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
 
             Surface surfaceFromFile = Surface.LoadFromFile(fileName);
            
             Assert.NotNull(surfaceFromFile);
 
             //Save loaded image to file to make sure we get the same file out
-            bool successToFile = surfaceFromFile.SaveToFile(ImageFormat.PNG, Path.Combine(TestHelper.RootPath, "Output/LoadFromFile.png"));
+            bool successToFile = surfaceFromFile.SaveToFile(ImageFormat.PNG, GetOutputFile("LoadFromFile.png"));
             Assert.True(successToFile);
             surfaceFromFile.Dispose();
             Assert.True(surfaceFromFile.IsDisposed);
@@ -79,7 +53,7 @@ namespace TeximpNet.Test
                 Assert.NotNull(surfaceFromStream);
 
                 //Save the loaded image to a stream to make sure we get the same file out
-                using (FileStream another = File.Create(Path.Combine(TestHelper.RootPath, "Output/LoadFromStream.png")))
+                using (FileStream another = File.Create(GetOutputFile("LoadFromStream.png")))
                 {
                     bool successToStream = surfaceFromStream.SaveToStream(ImageFormat.PNG, another);
                     Assert.True(successToStream);
@@ -92,7 +66,7 @@ namespace TeximpNet.Test
         [Fact]
         public void TestSurfaceFlipInvert()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
             Surface surfaceFromFile = Surface.LoadFromFile(fileName);
             Assert.NotNull(surfaceFromFile);
 
@@ -100,14 +74,14 @@ namespace TeximpNet.Test
             Assert.True(surfaceFromFile.FlipVertically());
             Assert.True(surfaceFromFile.Invert());
 
-            surfaceFromFile.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/TestFlipInvert.jpg"));
+            surfaceFromFile.SaveToFile(ImageFormat.JPEG, GetOutputFile("TestFlipInvert.jpg"));
             surfaceFromFile.Dispose();
         }
 
         [Fact]
         public void TestSurfaceAdjustBrightness()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
             Surface surfaceFromFile = Surface.LoadFromFile(fileName);
             Assert.NotNull(surfaceFromFile);
 
@@ -115,18 +89,18 @@ namespace TeximpNet.Test
             Assert.NotNull(clone);
 
             Assert.True(clone.AdjustBrightness(50));
-            clone.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/TestBrightnessLighter.jpg"));
+            clone.SaveToFile(ImageFormat.JPEG, GetOutputFile("TestBrightnessLighter.jpg"));
             clone.Dispose();
             
             Assert.True(surfaceFromFile.AdjustBrightness(-50));
-            surfaceFromFile.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/TestBrightnessDarker.jpg"));
+            surfaceFromFile.SaveToFile(ImageFormat.JPEG, GetOutputFile("TestBrightnessDarker.jpg"));
             surfaceFromFile.Dispose();
         }
 
         [Fact]
         public void TestSurfaceRotateClone()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
             Surface surfaceFromFile = Surface.LoadFromFile(fileName);
             Assert.NotNull(surfaceFromFile);
             
@@ -139,10 +113,10 @@ namespace TeximpNet.Test
 
             surfaceFromFile.Dispose();
 
-            clone.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/SubimageClone.jpg"));
+            clone.SaveToFile(ImageFormat.JPEG, GetOutputFile("SubimageClone.jpg"));
 
             Assert.True(clone.Rotate(45));
-            clone.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/Rotated.jpg"));
+            clone.SaveToFile(ImageFormat.JPEG, GetOutputFile("Rotated.jpg"));
 
             clone.Dispose();
         }
@@ -151,7 +125,7 @@ namespace TeximpNet.Test
         public void TestSurfaceGenerateMipMaps()
         {            
             //Generate mipmaps and combine all of them into a single image
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
             Surface surfaceFromFile = Surface.LoadFromFile(fileName);
             Assert.NotNull(surfaceFromFile);
 
@@ -177,39 +151,39 @@ namespace TeximpNet.Test
                 m.Dispose();
             }
 
-            megaMips.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/MipMapChain.jpg"));
+            megaMips.SaveToFile(ImageFormat.JPEG, GetOutputFile("MipMapChain.jpg"));
             megaMips.Dispose();
         }
 
         [Fact]
         public void TestSurfaceSwapColors()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
             Surface surfaceFromFile = Surface.LoadFromFile(fileName);
             Assert.NotNull(surfaceFromFile);
 
             Assert.True(surfaceFromFile.SwapColors(new RGBAQuad(217, 177, 126, 255), new RGBAQuad(255, 100, 255, 255), true));
 
-            surfaceFromFile.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/SwappedColors.jpg"));
+            surfaceFromFile.SaveToFile(ImageFormat.JPEG, GetOutputFile("SwappedColors.jpg"));
             surfaceFromFile.Dispose();
         }
 
         [Fact]
         public void TestSurfaceGammaContrast()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
             Surface surfaceFromFile = Surface.LoadFromFile(fileName);
             Assert.NotNull(surfaceFromFile);
 
             Surface gammaSurface = surfaceFromFile.Clone();
             Assert.True(gammaSurface.AdjustGamma(5));
 
-            gammaSurface.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/Gamma.jpg"));
+            gammaSurface.SaveToFile(ImageFormat.JPEG, GetOutputFile("Gamma.jpg"));
             gammaSurface.Dispose();
 
             Assert.True(surfaceFromFile.AdjustContrast(50));
             
-            surfaceFromFile.SaveToFile(ImageFormat.JPEG, Path.Combine(TestHelper.RootPath, "Output/Contrast.jpg"));
+            surfaceFromFile.SaveToFile(ImageFormat.JPEG, GetOutputFile("Contrast.jpg"));
             surfaceFromFile.Dispose();
         }
 
@@ -220,7 +194,7 @@ namespace TeximpNet.Test
             if (Unmanaged.FreeImageLibrary.Instance.IsLibraryLoaded)
                 Unmanaged.FreeImageLibrary.Instance.FreeLibrary();
 
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/bunny.jpg");
+            String fileName = GetInputFile("bunny.jpg");
 
             List<Task> tasks = new List<Task>();
 
@@ -240,7 +214,7 @@ namespace TeximpNet.Test
         [Fact]
         public void TestLoadPalette()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/256Color.bmp");
+            String fileName = GetInputFile("256Color.bmp");
 
             Surface surface = Surface.LoadFromFile(fileName);
 
@@ -253,7 +227,7 @@ namespace TeximpNet.Test
         [Fact]
         public void TestConversion()
         {
-            String fileName = Path.Combine(TestHelper.RootPath, "TestFiles/256Color.bmp");
+            String fileName = GetInputFile("256Color.bmp");
 
             Surface surface = Surface.LoadFromFile(fileName);
 
