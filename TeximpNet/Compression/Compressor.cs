@@ -718,7 +718,7 @@ namespace TeximpNet.Compression
 
             /// <summary>
             /// Sets image data as input. Format is always considered to be a 32-bit BGRA form, if in RGBA ordering, a copy of the data will be taken and re-ordered.
-            /// Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int)"/> first, other this will error.
+            /// Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int, int)"/> first, other this will error.
             /// </summary>
             /// <param name="data">Image data, assumed to be either 32-bit BGRA or RGBA format.</param>
             /// <param name="isBGRA">True if the data is BGRA ordering, false if RGBA ordering.</param>
@@ -809,7 +809,7 @@ namespace TeximpNet.Compression
 
             /// <summary>
             /// Sets 2D image data as input. Format is always considered to be a 32-bit BGRA form (a copy of the surface will be taken to convert if necessary), the color order is 
-            /// dependent on <see cref="Surface.IsBGRAOrder"/>. Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int)"/> first, other this will error.
+            /// dependent on <see cref="Surface.IsBGRAOrder"/>. Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int, int)"/> first, other this will error.
             /// </summary>
             /// <param name="data">Bitmap surface, if not 32-bit RGBA, a copy will be taken and converted.</param>
             /// <param name="mipmapLevel">Which mipmap level the image corresponds to.</param>
@@ -854,7 +854,7 @@ namespace TeximpNet.Compression
 
             /// <summary>
             /// Sets cubemap face data as input. Format is always considered to be a 32-bit BGRA form (a copy of the surface will be taken to convert if necessary), the color order is 
-            /// dependent on <see cref="Surface.IsBGRAOrder"/>. Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int)"/> first, other this will error.
+            /// dependent on <see cref="Surface.IsBGRAOrder"/>. Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int, int)"/> first, other this will error.
             /// </summary>
             /// <param name="data">Bitmap surface, if not 32-bit RGBA, a copy will be taken and converted.</param>
             /// <param name="face">Which cubemap face the image corresponds to.</param>
