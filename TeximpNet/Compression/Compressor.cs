@@ -224,11 +224,23 @@ namespace TeximpNet.Compression
             if (m_outputtingToStream)
                 return;
 
-            //Nvtt treats texture2D's single face as PosX but we do differentiate in the API so make sure we set the face to none
-            if (m_inputOptions.TextureType == TextureType.Texture2D && (CubeMapFace)face == CubeMapFace.Positive_X)
-                face = (int)CubeMapFace.None;
+            //Create different image datas based on the type of texture we're processing
+            switch(m_inputOptions.TextureType)
+            {
+                case TextureType.Texture2D:
+                    m_currentMip = new CompressedImageData(width, height, m_format, face);
+                    break;
+                case TextureType.Texture3D:
+                    m_currentMip = new CompressedImageData(width, height, depth, m_format);
+                    break;
+                case TextureType.TextureCube:
+                    m_currentMip = new CompressedImageData(width, height, (CubeMapFace)face, m_format);
+                    break;
+                default:
+                    m_currentMip = null;
+                    break;
+            }
 
-            m_currentMip = new CompressedImageData(width, height, (CubeMapFace) face, m_format);
             m_currentBytePos = 0;
             m_mipChain.Add(m_currentMip);
         }
@@ -334,7 +346,7 @@ namespace TeximpNet.Compression
         /// Options for setting up input to a <see cref="Compressor"/>.
         /// </summary>
         /// <remarks>
-        /// Input image data can be set from <see cref="Surface"/> objects or from raw IntPtr memory. There are some
+        /// Input image data can be set from <see cref="Surface"/> objects or from raw IntPtr memory (format is always expected to be BGRA, 8-bits per channel). There are some
         /// methods that can set both the texture layout and all the first mip surfaces in one call, but the user can optionally
         /// set the texture layout and then set each individual face and miplevel. In most cases the first mip level gets set
         /// and mipmaps are generated, but there are other cases where mipmaps are already present and the <see cref="Compressor"/>
@@ -658,8 +670,9 @@ namespace TeximpNet.Compression
             /// <param name="type">Type of texture the input image is.</param>
             /// <param name="width">Width of the input image.</param>
             /// <param name="height">Height of the input image.</param>
-            /// <param name="depth">Depth of the input image, by default this is 1.</param>
-            public void SetTextureLayout(TextureType type, int width, int height, int depth = 1)
+            /// <param name="depth">Optional depth of the input image, only valid for 3D textures, by default this is 1.</param>
+            /// <param name="arrayCount">Optional array count, only valid for 2D array textures, by default this is 1.</param>
+            public void SetTextureLayout(TextureType type, int width, int height, int depth = 1, int arrayCount = 1)
             {
                 m_type = type;
                 m_width = width;
@@ -667,9 +680,13 @@ namespace TeximpNet.Compression
                 m_depth = depth;
                 m_faceHasData.Clear();
 
+                System.Diagnostics.Debug.Assert(arrayCount == 1, "2D Array textures not supported yet, because the NVTT C-API doesn't (yet) expose it.");
+                System.Diagnostics.Debug.Assert(depth == 1 && type != TextureType.Texture3D, "Only 3D textures can have depth");
+
                 switch(type)
                 {
                     case TextureType.Texture2D:
+                    case TextureType.Texture3D:
                         m_faceHasData.Add(false);
                         break;
                     case TextureType.TextureCube:
@@ -700,111 +717,114 @@ namespace TeximpNet.Compression
             }
 
             /// <summary>
-            /// Sets mipmap data as input. Format is always considered to be in 32-bit BGRA form. Don't forget to set the texture layout first otherwise this will error.
+            /// Sets image data as input. Format is always considered to be a 32-bit BGRA form, if in RGBA ordering, a copy of the data will be taken and re-ordered.
+            /// Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int)"/> first, other this will error.
             /// </summary>
-            /// <param name="data">Pointer to data.</param>
-            /// <param name="width">Width of the image.</param>
-            /// <param name="height">Height of the image.</param>
-            /// <param name="depth">Depth of the image.</param>
-            /// <param name="face">Cubemap face that the image corresponds to.</param>
-            /// <param name="mipmapLevel">Mip level the image corresponds to.</param>
-            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
-            public bool SetMipmapData(IntPtr data, int width, int height, int depth, CubeMapFace face, int mipmapLevel)
+            /// <param name="data">Image data, assumed to be either 32-bit BGRA or RGBA format.</param>
+            /// <param name="isBGRA">True if the data is BGRA ordering, false if RGBA ordering.</param>
+            /// <param name="imageInfo">Information describing image details such as dimension.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
+            public bool SetMipmapData(IntPtr data, bool isBGRA, ImageInfo imageInfo)
             {
-                return SetMipmapData(data, true, width, height, depth, face, mipmapLevel);
-            }
-
-            /// <summary>
-            /// Sets mipmap data as input. Format is always considered to be in 32-bit BGRA form. Don't forget to set the texture layout first otherwise this will error.
-            /// </summary>
-            /// <param name="data">Pointer to data.</param>
-            /// <param name="width">Width of the image.</param>
-            /// <param name="height">Height of the image.</param>
-            /// <param name="depth">Depth of the image.</param>
-            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
-            public bool SetMipmapData(IntPtr data, int width, int height, int depth = 1)
-            {
-                return SetMipmapData(data, true, width, height, depth, CubeMapFace.Positive_X, 0);
-            }
-
-            /// <summary>
-            /// Sets mipmap data as input. Don't forget to set the texture layout first otherwise this will error.
-            /// </summary>
-            /// <param name="data">Pointer to data.</param>
-            /// <param name="isBGRA">True if the data is in BGRA format, if false then RGBA. If false then the data is copied and converted to BGRA format.</param>
-            /// <param name="width">Width of the image.</param>
-            /// <param name="height">Height of the image.</param>
-            /// <param name="depth">Depth of the image.</param>
-            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
-            public bool SetMipmapData(IntPtr data, bool isBGRA, int width, int height, int depth = 1)
-            {
-                return SetMipmapData(data, isBGRA, width, height, depth, CubeMapFace.Positive_X, 0);
-            }
-
-            /// <summary>
-            /// Sets mipmap data as input. Don't forget to set the texture layout first otherwise this will error.
-            /// </summary>
-            /// <param name="data">Pointer to data.</param>
-            /// <param name="isBGRA">True if the data is in BGRA format, if false then RGBA. If false then the data is copied and converted to BGRA format.</param>
-            /// <param name="width">Width of the image.</param>
-            /// <param name="height">Height of the image.</param>
-            /// <param name="depth">Depth of the image.</param>
-            /// <param name="face">Cubemap face that the image corresponds to.</param>
-            /// <param name="mipmapLevel">Mip level the image corresponds to.</param>
-            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
-            public bool SetMipmapData(IntPtr data, bool isBGRA, int width, int height, int depth, CubeMapFace face, int mipmapLevel)
-            {
-                if(data == IntPtr.Zero)
-                    return false;
-
-                if (face == CubeMapFace.None)
-                    face = CubeMapFace.Positive_X;
-
-                IntPtr bgraPtr = data;
-                bool needToDisposeBGRAPtr = false;
-
-                if(!isBGRA)
+                if(data == IntPtr.Zero || imageInfo.Width <= 0 || imageInfo.Height <= 0 || imageInfo.MipLevel < 0 || imageInfo.ArrayIndex < 0 || imageInfo.RowPitch <= 0)
                 {
-                    bgraPtr = ConvertToBGRA(data, width, height);
-                    needToDisposeBGRAPtr = true;
+                    System.Diagnostics.Debug.Assert(false);
+                    return false;
                 }
 
-                bool succees = false;
+                //Check for 3D images, they must have a slice pitch
+                if(imageInfo.Depth > 1)
+                {
+                    if(imageInfo.SlicePitch <= 0)
+                    {
+                        System.Diagnostics.Debug.Assert(false);
+                        return false;
+                    }
+                }
+
+                //There are four cases:
+                //1. RowPitch/SlicePitch match expected no padding + Color order is BGRA, then we just set the data without any conversion
+                //2. RowPitch/SlicePitch match expected no padding + Color order is RGBA, then we have to go line-by-line and texel-by-texel and copy to temporary memory
+                //3. RowPitch/SlicePitch have padding + Color order is BGRA, then we copy the data to temporary memory line-by-line
+                //4. RowPitch/SlicePitch have padding + Color order is RGBA, then we have to go line-by-line and texel-by-texel and copy to temporary memory
+
+                //Compute expected pitches, the compressor expects straight up arrays of texels (at least from what I can tell), so no padding. But image sources MAY have padding,
+                //which we need to account for
+
+                bool is3D = m_type == TextureType.Texture3D;
+                int formatSize = 4; //4-byte BGRA texel
+                int rowStride = imageInfo.Width * formatSize;
+
+                //If not 3D texture, make sure we set some well known values just in case ImageInfo isn't valid
+                int depthStride = (!is3D) ? 0 : imageInfo.Width * imageInfo.Height * formatSize;
+                int slicePitch = (!is3D) ? 0 : imageInfo.SlicePitch;
+                int depth = (!is3D) ? 1 : imageInfo.Depth;
+                
+                bool pitchesMatch = rowStride == imageInfo.RowPitch && depthStride == slicePitch;
+
+                IntPtr bgraPtr = data;
+                bool needsToDisposeBgraPtr = false;
+
+                if(isBGRA)
+                {
+                    if(!pitchesMatch)
+                    {
+                        bgraPtr = CopyBGRAData(data, imageInfo.Width, imageInfo.Height, depth, imageInfo.RowPitch, imageInfo.SlicePitch);
+                        needsToDisposeBgraPtr = true;
+                    }
+
+                    //Pitches + color order match, fastest case!
+                }
+                else
+                {
+                    if(!pitchesMatch)
+                    {
+                        bgraPtr = CopyRGBAData(data, imageInfo.Width, imageInfo.Height, depth, imageInfo.RowPitch, imageInfo.SlicePitch);
+                        needsToDisposeBgraPtr = true;
+                    }
+                    else
+                    {
+                        bgraPtr = CopyRGBAData(data, imageInfo.Width, imageInfo.Height, depth, imageInfo.RowPitch, imageInfo.SlicePitch);
+                        needsToDisposeBgraPtr = true;
+                    }
+                }
+
+                bool success = false;
 
                 try
                 {
-                    succees = NvTextureToolsLibrary.Instance.SetInputOptionsMipmapData(m_inputOptionsPtr, bgraPtr, width, height, depth, (int)face, mipmapLevel);
+                    success = NvTextureToolsLibrary.Instance.SetInputOptionsMipmapData(m_inputOptionsPtr, bgraPtr, imageInfo.Width, imageInfo.Height, depth, imageInfo.ArrayIndex, imageInfo.MipLevel);
                 }
                 finally
                 {
-                    SetHasData(face, succees);
+                    //Set some bookkeeping in the managed side
+                    SetHasData(imageInfo.ArrayIndex, success);
 
-                    if (needToDisposeBGRAPtr)
+                    if (needsToDisposeBgraPtr)
                         MemoryHelper.FreeMemory(bgraPtr);
                 }
 
-                return succees;
+                return success;
             }
 
             /// <summary>
-            /// Sets mipmap data as input. Don't forget to set the texture layout first otherwise this will error.
+            /// Sets 2D image data as input. Format is always considered to be a 32-bit BGRA form (a copy of the surface will be taken to convert if necessary), the color order is 
+            /// dependent on <see cref="Surface.IsBGRAOrder"/>. Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int)"/> first, other this will error.
             /// </summary>
-            /// <param name="data">Bitmap surface. If not <see cref="ImageType.Bitmap"/> this fails, so be sure to convert it before calling.</param>
-            /// <param name="face">Cubemap face to set surface to.</param>
-            /// <param name="mipmapLevel">Mipmap level to set the surface to.</param>
-            /// <returns>True if the data was successfully set, false otherwise (e.g. does not match texture layout which needs to be set first).</returns>
-            public bool SetMipmapData(Surface data, CubeMapFace face, int mipmapLevel)
+            /// <param name="data">Bitmap surface, if not 32-bit RGBA, a copy will be taken and converted.</param>
+            /// <param name="mipmapLevel">Which mipmap level the image corresponds to.</param>
+            /// <param name="arrayIndex">Which array index the image corresponds to.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
+            public bool SetMipmapData(Surface data, int mipmapLevel = 0, int arrayIndex = 0)
             {
-                if(data == null || data.ImageType != ImageType.Bitmap)
+                if (data == null)
                     return false;
 
-                if (face == CubeMapFace.None)
-                    face = CubeMapFace.Positive_X;
-
-                //Ensure we are 32-bit bitmap
+                //Ensure we are a 32-bit RGBA bitmap
                 Surface rgbaData = data;
                 bool needToDispose = false;
-                if(data.BitsPerPixel != 32)
+
+                if (data.ImageType != ImageType.Bitmap || data.ColorType != ImageColorType.RGBA || data.BitsPerPixel != 32)
                 {
                     rgbaData = data.Clone();
                     if (!rgbaData.ConvertTo(ImageConversion.To32Bits))
@@ -816,77 +836,59 @@ namespace TeximpNet.Compression
                     needToDispose = true;
                 }
 
-                int width = rgbaData.Width;
-                int height = rgbaData.Height;
-
-                IntPtr bgraPtr = rgbaData.DataPtr;
-                bool needToDisposeBGRAPtr = false;
-
-                //Need to convert to BGRA since big endian has data in RGBA form
-                if (!FreeImageLibrary.Instance.IsLittleEndian)
-                {
-                    bgraPtr = ConvertToBGRA(rgbaData.DataPtr, width, height);
-                    needToDisposeBGRAPtr = true;
-                }
-
+                ImageInfo imageInfo = ImageInfo.From2D(rgbaData.Width, rgbaData.Height, rgbaData.Pitch, mipmapLevel, arrayIndex);
                 bool success = false;
 
                 try
                 {
-                    success = NvTextureToolsLibrary.Instance.SetInputOptionsMipmapData(m_inputOptionsPtr, bgraPtr, width, height, 1, (int)face, mipmapLevel);
+                    success = SetMipmapData(rgbaData.DataPtr, Surface.IsBGRAOrder, imageInfo);
                 }
                 finally
                 {
-                    SetHasData(face, success);
-
                     if (needToDispose)
                         rgbaData.Dispose();
-
-                    if (needToDisposeBGRAPtr)
-                        MemoryHelper.FreeMemory(bgraPtr);
                 }
 
-                return success;      
+                return success;
             }
 
-            private unsafe IntPtr ConvertToBGRA(IntPtr rgbaPtr, int width, int height)
+            /// <summary>
+            /// Sets cubemap face data as input. Format is always considered to be a 32-bit BGRA form (a copy of the surface will be taken to convert if necessary), the color order is 
+            /// dependent on <see cref="Surface.IsBGRAOrder"/>. Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int)"/> first, other this will error.
+            /// </summary>
+            /// <param name="data">Bitmap surface, if not 32-bit RGBA, a copy will be taken and converted.</param>
+            /// <param name="face">Which cubemap face the image corresponds to.</param>
+            /// <param name="mipmapLevel">Which mipmap level the image corresponds to.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
+            public bool SetMipmapData(Surface data, CubeMapFace face, int mipmapLevel = 0)
             {
-                IntPtr bgraPtr = MemoryHelper.AllocateMemory(4 * width * height);
-
-                byte* pBGRA = (byte*)bgraPtr.ToPointer();
-                byte* pRGBA = (byte*)rgbaPtr.ToPointer();
-
-                int totalTexels = width * height;
-
-                for(int i = 0; i < totalTexels; i++)
+                if(data != null)
                 {
-                    //RGBA -> BGRA
-                    pBGRA[0] = pRGBA[2];
-                    pBGRA[1] = pRGBA[1];
-                    pBGRA[2] = pRGBA[0];
-                    pBGRA[3] = pRGBA[3];
-
-                    pBGRA += 4;
-                    pRGBA += 4;
+                    //Cubemaps should be square...
+                    System.Diagnostics.Debug.Assert(data.Width == data.Height);
                 }
 
-                return bgraPtr;
+                //Make sure the cubemap face is valid...
+                if (face == CubeMapFace.None)
+                    face = CubeMapFace.Positive_X;
+
+                return SetMipmapData(data, mipmapLevel, (int)face);
             }
 
             /// <summary>
             /// Sets input data from a specified surface. This sets the texture layout as a 2D texture
             /// and the first mipmap with the surface data.
             /// </summary>
-            /// <param name="data">Bitmap surface data.</param>
-            /// <returns>True if the operation was successful, false otherwise.</returns>
+            /// <param name="data">Bitmap surface data, if not 32-bit RGBA, a copy will be taken and converted.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
             public bool SetData(Surface data)
             {
-                if (data == null || data.ImageType != ImageType.Bitmap)
+                if (data == null)
                     return false;
 
                 SetTextureLayout(TextureType.Texture2D, data.Width, data.Height, 1);
 
-                bool success = SetMipmapData(data, CubeMapFace.Positive_X, 0);
+                bool success = SetMipmapData(data, 0);
 
                 if (!success)
                     ClearTextureLayout();
@@ -899,8 +901,8 @@ namespace TeximpNet.Compression
             /// cubemap and sets each surface as the first mipmap of each face. All the surface dimensions must match, and there must be
             /// six faces.
             /// </summary>
-            /// <param name="cubeFaces">Array of bitmap surfaces, in the order of the CubeMapFace enum (first index is PosX, then NegX, etc).</param>
-            /// <returns>True if the operation was successful, false otherwise.</returns>
+            /// <param name="cubeFaces">Array of bitmap surfaces, in the order of the <see cref="CubeMapFace"/> enum (+X, -X, +Y, -Y, +Z, -Z). If surfaces are not 32-bit RGBA, a copy will be taken and converted..</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
             public bool SetData(Surface[] cubeFaces)
             {
                 if (cubeFaces == null || cubeFaces.Length != 6)
@@ -908,13 +910,14 @@ namespace TeximpNet.Compression
 
                 Surface first = cubeFaces[0];
 
-                if (first == null || first.ImageType != ImageType.Bitmap)
+                //Must be a square image
+                if (first == null || first.Width != first.Height)
                     return false;
 
                 for(int i = 1; i < cubeFaces.Length; i++)
                 {
                     Surface next = cubeFaces[i];
-                    if (next == null || next.ImageType != ImageType.Bitmap)
+                    if (next == null)
                         return false;
 
                     if (first.Width != next.Width || first.Height != next.Height)
@@ -1076,14 +1079,34 @@ namespace TeximpNet.Compression
                 alphaScale = m_alphaScale;
             }
 
-            private void SetHasData(CubeMapFace face, bool success)
+            private void SetHasData(int arrayIndex, bool success)
             {
-                int idx = (int)face;
-
-                if (idx >= m_faceHasData.Count)
+                if (arrayIndex >= m_faceHasData.Count)
                     return;
 
-                m_faceHasData[idx] = success;
+                m_faceHasData[arrayIndex] = success;
+            }
+
+            private unsafe IntPtr CopyBGRAData(IntPtr srcBgraPtr, int width, int height, int depth, int rowPitch, int slicePitch)
+            {
+                int formatSize = 4; //4-byte BGRA texel
+
+                //Input to compressor will be a simple array of the texels, no padding (note: at least from what I can tell from NVTT docs and sourcecode!)
+                IntPtr dstBgraPtr = MemoryHelper.AllocateMemory(width * height * depth * formatSize);
+                MemoryHelper.CopyBGRAImageData(dstBgraPtr, srcBgraPtr, width, height, depth, rowPitch, slicePitch);
+
+                return dstBgraPtr;
+            }
+
+            private unsafe IntPtr CopyRGBAData(IntPtr srcRgbaPtr, int width, int height, int depth, int rowPitch, int slicePitch)
+            {
+                int formatSize = 4; //4-byte BGRA texel
+
+                //Input to compressor will be a simple array of the texels, no padding (note: at least from what I can tell from NVTT docs and sourcecode!)
+                IntPtr dstBgraPtr = MemoryHelper.AllocateMemory(width * height * depth * formatSize);
+                MemoryHelper.CopyRGBAImageData(dstBgraPtr, srcRgbaPtr, width, height, depth, rowPitch, slicePitch);
+
+                return dstBgraPtr;
             }
         }
 

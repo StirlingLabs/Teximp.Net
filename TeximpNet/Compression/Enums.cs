@@ -133,7 +133,12 @@ namespace TeximpNet.Compression
         /// <summary>
         /// Input data is a Cubemap, which has 6 faces, where each face is a 2D texture.
         /// </summary>
-        TextureCube = 1
+        TextureCube = 1,
+
+        /// <summary>
+        /// Input data is a 3D texture.
+        /// </summary>
+        Texture3D = 2
     }
 
     /// <summary>

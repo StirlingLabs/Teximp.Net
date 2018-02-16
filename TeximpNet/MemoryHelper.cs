@@ -576,5 +576,107 @@ namespace TeximpNet
         {
             MemoryInterop.WriteInline<T>((void*) pDest, ref data);
         }
+
+        /// <summary>
+        /// Copies 32-bit BGRA color data from the src point (with specified row/slice pitch -- it may be padded!) into a NON-PADDED 32-bit BGRA color image. This
+        /// doesn't validate any data, so use at your own risk.
+        /// </summary>
+        /// <param name="dstBgraPtr">Destination BGRA pointer</param>
+        /// <param name="srcBgraPtr">Source BGRA pointer</param>
+        /// <param name="width">Width of the image</param>
+        /// <param name="height">Height of the image</param>
+        /// <param name="depth">Depth of the image</param>
+        /// <param name="rowPitch">Pitch of each scanline of source image.</param>
+        /// <param name="slicePitch">Slice of each depth slice of source image.</param>
+        public static unsafe void CopyBGRAImageData(IntPtr dstBgraPtr, IntPtr srcBgraPtr, int width, int height, int depth, int rowPitch, int slicePitch)
+        {
+            int formatSize = 4; //4-byte BGRA texel
+            int rowStride = width * formatSize;
+            int depthStride = width * height * formatSize;
+
+            IntPtr dstPtr = dstBgraPtr;
+            IntPtr srcPtr = srcBgraPtr;
+
+            //Iterate for each depth
+            for (int slice = 0; slice < depth; slice++)
+            {
+                //Start with a pointer that points to the start of the slice
+                IntPtr sPtr = srcPtr;
+
+                //And iterate + copy each line per the height of the image
+                for (int row = 0; row < height; row++)
+                {
+                    MemoryHelper.CopyMemory(dstPtr, sPtr, rowStride);
+
+                    //Advance the temporary slice pointer and the source pointer
+                    sPtr = MemoryHelper.AddIntPtr(sPtr, rowPitch);
+                    dstPtr = MemoryHelper.AddIntPtr(dstPtr, rowStride);
+                }
+
+                //Advance the src pointer by the slice pitch to get to the next image
+                srcPtr = MemoryHelper.AddIntPtr(srcPtr, slicePitch);
+            }
+        }
+
+        /// <summary>
+        /// Copies 32-bit RGBA color data from the src point (with specified row/slice pitch -- it may be padded!) into a NON-PADDED 32-bit BGRA color image. This
+        /// doesn't validate any data, so use at your own risk.
+        /// </summary>
+        /// <param name="dstBgraPtr">Destination BGRA pointer.</param>
+        /// <param name="srcRgbaPtr">Source RGBA pointer.</param>
+        /// <param name="width">Width of the image</param>
+        /// <param name="height">Height of the image</param>
+        /// <param name="depth">Depth of the image</param>
+        /// <param name="rowPitch">Pitch of each scanline of source image.</param>
+        /// <param name="slicePitch">Slice of each depth slice of source image.</param>
+        public static unsafe void CopyRGBAImageData(IntPtr dstBgraPtr, IntPtr srcRgbaPtr, int width, int height, int depth, int rowPitch, int slicePitch)
+        {
+            int formatSize = 4; //4-byte BGRA texel
+            int rowStride = width * formatSize;
+            int depthStride = width * height * formatSize;
+
+            byte* pBGRA = (byte*)dstBgraPtr.ToPointer();
+            byte* pRGBA = (byte*)srcRgbaPtr.ToPointer();
+
+            int dstIndex = 0;
+
+            //Iterate for each depth
+            for (int slice = 0; slice < depth; slice++)
+            {
+                //Start with a pointer that points to the start of the slice
+                byte* srcRGBA = pRGBA;
+
+                //And iterate over each line, and each texel in the line, and re-order the color and set it to destination 
+                for (int row = 0; row < height; row++)
+                {
+                    //Reset the index at zero for each scanline
+                    int srcIndex = 0;
+
+                    //Go texel-by-texel
+                    for (int x = 0; x < width; x++)
+                    {
+                        //RGBA -> BGRA
+                        byte r = srcRGBA[srcIndex];
+                        byte g = srcRGBA[srcIndex + 1];
+                        byte b = srcRGBA[srcIndex + 2];
+                        byte a = srcRGBA[srcIndex + 3];
+
+                        pBGRA[dstIndex] = b;
+                        pBGRA[dstIndex + 1] = g;
+                        pBGRA[dstIndex + 2] = r;
+                        pBGRA[dstIndex + 3] = a;
+
+                        srcIndex += 4;
+                        dstIndex += 4;
+                    }
+
+                    //Advance to next scanline
+                    srcRGBA += rowPitch;
+                }
+
+                //Advance the src pointer by the slice pitch to get to the next image
+                pRGBA += slicePitch;
+            }
+        }
     }
 }

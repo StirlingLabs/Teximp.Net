@@ -29,8 +29,9 @@ namespace TeximpNet.Compression
     /// </summary>
     public sealed class CompressedImageData : IDisposable
     {
-        private int m_width, m_height;
-        private CubeMapFace m_face;
+        private int m_width, m_height, m_depth;
+        private int m_arrayIndex;
+        private TextureType m_type;
         private CompressionFormat m_format;
         private IntPtr m_data;
         private int m_sizeInBytes;
@@ -59,13 +60,35 @@ namespace TeximpNet.Compression
         }
 
         /// <summary>
+        /// Gets the depth of the image, if 3D. If 2D or Cube, this will be one.
+        /// </summary>
+        public int Depth
+        {
+            get
+            {
+                return m_depth;
+            }
+        }
+
+        /// <summary>
+        /// Gets the array index of the image, if it is part of an array or cubmap texture.
+        /// </summary>
+        public int ArrayIndex
+        {
+            get
+            {
+                return m_arrayIndex;
+            }
+        }
+
+        /// <summary>
         /// Gets the cubemap face of the image, if it is part of a cubemap.
         /// </summary>
         public CubeMapFace Face
         {
             get
             {
-                return m_face;
+                return (m_type == TextureType.TextureCube) ? (CubeMapFace)m_arrayIndex : CubeMapFace.None;
             }
         }
 
@@ -119,7 +142,12 @@ namespace TeximpNet.Compression
         /// <param name="width">Width of the image.</param>
         /// <param name="height">Height of the image.</param>
         /// <param name="format">Image format.</param>
-        public CompressedImageData(int width, int height, CompressionFormat format) : this(width, height, CubeMapFace.None, format) { }
+        /// <param name="arrayIndex">Optional array index, for non-array 2D images, this is just zero.</param>
+        public CompressedImageData(int width, int height, CompressionFormat format, int arrayIndex = 0)
+        {
+            //NVTT supports array 2D textures, but we have no way of of setting it in the current C-API!!
+            Initialize(width, height, 1, arrayIndex, TextureType.Texture2D, format);
+        }
 
         /// <summary>
         /// Constructs a new instance of the <see cref="CompressedImageData"/> class.
@@ -130,14 +158,22 @@ namespace TeximpNet.Compression
         /// <param name="format">Image format.</param>
         public CompressedImageData(int width, int height, CubeMapFace face, CompressionFormat format)
         {
-            m_width = width;
-            m_height = height;
-            m_format = format;
-            m_face = face;
-            m_isDisposed = false;
+            int arrayIndex = (face == CubeMapFace.None) ? 0 : (int)face;
+            m_type = (face == CubeMapFace.None) ? TextureType.Texture2D : TextureType.TextureCube;
 
-            m_sizeInBytes = CalculateSizeInBytes();
-            m_data = MemoryHelper.AllocateMemory(m_sizeInBytes);
+            Initialize(width, height, 1, arrayIndex, m_type, format);
+        }
+
+        /// <summary>
+        /// Constructs a new instance of the <see cref="CompressedImageData"/> class.
+        /// </summary>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="depth">Depth of the image.</param>
+        /// <param name="format">Image format.</param>
+        public CompressedImageData(int width, int height, int depth, CompressionFormat format)
+        {
+            Initialize(width, height, depth, 0, TextureType.Texture3D, format);
         }
 
         /// <summary>
@@ -156,6 +192,20 @@ namespace TeximpNet.Compression
             Dispose(true);
 
             GC.SuppressFinalize(this);
+        }
+
+        private void Initialize(int width, int height, int depth,  int arrayIndex, TextureType type, CompressionFormat format)
+        {
+            m_width = width;
+            m_height = height;
+            m_depth = depth;
+            m_format = format;
+            m_arrayIndex = arrayIndex;
+            m_type = type;
+            m_isDisposed = false;
+
+            m_sizeInBytes = CalculateSizeInBytes();
+            m_data = MemoryHelper.AllocateMemory(m_sizeInBytes);
         }
 
         /// <summary>
