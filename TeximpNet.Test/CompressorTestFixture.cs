@@ -101,6 +101,48 @@ namespace TeximpNet.Test
         }
 
         [Fact]
+        public void TestProcessCubemapTexture()
+        {
+            List<String> fileNames = new List<string>();
+            fileNames.Add("right_PosX.png");
+            fileNames.Add("left_NegX.png");
+            fileNames.Add("top_PosY.png");
+            fileNames.Add("bot_NegY.png");
+            fileNames.Add("front_PosZ.png");
+            fileNames.Add("back_NegZ.png");
+
+            Compressor compressor = new Compressor();
+            compressor.Input.GenerateMipmaps = true;
+            compressor.Compression.Format = CompressionFormat.DXT1;
+
+            Surface[] surfaces = new Surface[6];
+
+            for(int i = 0; i < fileNames.Count; i++)
+            {
+                String file = GetInputFile(Path.Combine("Cubemap", fileNames[i]));
+                surfaces[i] = Surface.LoadFromFile(file, true);
+            }
+            
+            try
+            {
+                compressor.Input.SetData(surfaces);
+            }
+            finally
+            {
+                foreach (Surface s in surfaces)
+                    s.Dispose();
+            }
+
+            String outputFile = GetOutputFile("Nebula.dds");
+            Assert.True(compressor.Process(outputFile));
+
+            //Look at compressed image processing too
+            List<CompressedImageData> images = new List<CompressedImageData>();
+            Assert.True(compressor.Process(images));
+            Assert.True(images.Count == compressor.Input.MipmapCount * 6);
+        }
+
+        [Fact]
         public void TestProcess3DTexture()
         {
             int width = 256;
