@@ -8,18 +8,18 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{e3628c05-bc8a-4e5b-ac81-4b4342ffa8ad}</ProjectGuid>
-    <SHFBSchemaVersion>2015.6.5.0</SHFBSchemaVersion>
+    <SHFBSchemaVersion>2017.9.26.0</SHFBSchemaVersion>
     <!-- AssemblyName, Name, and RootNamespace are not used by SHFB but Visual
          Studio adds them anyway -->
     <AssemblyName>Documentation</AssemblyName>
     <RootNamespace>Documentation</RootNamespace>
     <Name>Documentation</Name>
     <!-- SHFB properties -->
-    <OutputPath>C:\Users\Nicholas.Woodfield\Documents\Visual Studio 2015\Projects\TeximpNet\Docs\</OutputPath>
-    <HtmlHelpName>TeximpNet Documentation %28January 2017%29</HtmlHelpName>
+    <OutputPath>C:\Users\Nicholas\Documents\Visual Studio 2017\Projects\TeximpNet\Docs\</OutputPath>
+    <HtmlHelpName>TeximpNet Documentation %28February 2018%29</HtmlHelpName>
     <Language>en-US</Language>
     <PresentationStyle>VS2013</PresentationStyle>
-    <HelpFileVersion>1.1.0</HelpFileVersion>
+    <HelpFileVersion>1.2.0</HelpFileVersion>
     <ProductTitle>TeximpNet</ProductTitle>
     <VendorName>
     </VendorName>
@@ -27,19 +27,20 @@
       <DocumentationSource sourceFile="TeximpNet\bin\Release\TeximpNet.dll" />
       <DocumentationSource sourceFile="TeximpNet\bin\Release\TeximpNet.xml" />
     </DocumentationSources>
-    <HelpTitle>TeximpNet Documentation %28January 2017%29</HelpTitle>
-    <CopyrightText>Copyright &amp;#169%3b 2012-2017 AssimpNet - Nicholas Woodfield. All rights reserved.</CopyrightText>
+    <HelpTitle>TeximpNet Documentation %28February 2018%29</HelpTitle>
+    <CopyrightText>Copyright &amp;#169%3b 2012-2018 AssimpNet - Nicholas Woodfield. All rights reserved.</CopyrightText>
     <NamespaceSummaries>
       <NamespaceSummaryItem name="(global)" isDocumented="False" />
-<NamespaceSummaryItem name="TeximpNet" isDocumented="True">Main namespace - contains high level TeximpNet objects.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="TeximpNet.Compression" isDocumented="True">Contains the Nvidia Texture Tools (NVTT) compression wrapper.</NamespaceSummaryItem>
-<NamespaceSummaryItem name="TeximpNet.Unmanaged" isDocumented="True">Contains the low-level P/Invoke functions and unmanaged structures.</NamespaceSummaryItem></NamespaceSummaries>
+      <NamespaceSummaryItem name="TeximpNet" isDocumented="True">Main namespace - contains high level TeximpNet objects.</NamespaceSummaryItem>
+      <NamespaceSummaryItem name="TeximpNet.Compression" isDocumented="True">Contains the Nvidia Texture Tools (NVTT) compression wrapper.</NamespaceSummaryItem>
+      <NamespaceSummaryItem name="TeximpNet.Unmanaged" isDocumented="True">Contains the low-level P/Invoke functions and unmanaged structures.</NamespaceSummaryItem>
+    </NamespaceSummaries>
     <SyntaxFilters>C#</SyntaxFilters>
     <CollectionTocStyle>Flat</CollectionTocStyle>
     <HeaderText>
     </HeaderText>
     <RootNamespaceTitle>TeximpNet</RootNamespaceTitle>
-    <ProjectSummary>A .NET texture and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.17.0 of FreeImage and version 2.1 of NVTT.</ProjectSummary>
+    <ProjectSummary>A .NET texture and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.17.0 of FreeImage and version 2.1.1 of NVTT.</ProjectSummary>
     <MissingTags>Summary, Parameter, Returns, AutoDocumentCtors, Namespace, TypeParameter, AutoDocumentDispose</MissingTags>
     <IncludeStopWordList>False</IncludeStopWordList>
     <HelpFileFormat>HtmlHelp1</HelpFileFormat>
@@ -57,12 +58,12 @@
     <NamespaceGrouping>False</NamespaceGrouping>
     <BuildAssemblerVerbosity>OnlyWarningsAndErrors</BuildAssemblerVerbosity>
     <IndentHtml>False</IndentHtml>
-    <FrameworkVersion>.NET Framework 4.5</FrameworkVersion>
+    <FrameworkVersion>.NET Framework 4.7</FrameworkVersion>
     <KeepLogFile>True</KeepLogFile>
     <DisableCodeBlockComponent>False</DisableCodeBlockComponent>
     <CppCommentsFixup>False</CppCommentsFixup>
     <CleanIntermediates>True</CleanIntermediates>
-    <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected</VisibleItems>
+    <VisibleItems>InheritedMembers, InheritedFrameworkMembers, Protected, EditorBrowsableNever, NonBrowsable</VisibleItems>
     <TocParentId>-1</TocParentId>
     <TocParentVersion>100</TocParentVersion>
     <TopicVersion>100</TopicVersion>
