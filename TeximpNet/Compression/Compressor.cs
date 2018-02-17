@@ -241,6 +241,8 @@ namespace TeximpNet.Compression
                     break;
             }
 
+            System.Diagnostics.Debug.Assert(m_currentMip.SizeInBytes == size);
+
             m_currentBytePos = 0;
             m_mipChain.Add(m_currentMip);
         }
