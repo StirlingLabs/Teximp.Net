@@ -27,7 +27,7 @@
   <ItemGroup>
     <Content Include="..\ChangeLog.txt" Link="ChangeLog.txt" PackagePath="" />
     <Content Include="..\License.txt" Link="License.txt" PackagePath="" />
-    <Content Include="..\Docs\TeximpNet Documentation %28January 2017%29.chm" Link="TeximpNet Documentation %28January 2017%29.chm" PackagePath="" />
+    <Content Include="..\Docs\TeximpNet Documentation %28February 2018%29.chm" Link="TeximpNet Documentation %28February 2018%29.chm" PackagePath="" />
     <Content Include="..\libs\FreeImage\win-x64\FreeImage64.dll" Link="build\native\win-x64\FreeImage64.dll" PackagePath="build\native\win-x64\" />
     <Content Include="..\libs\FreeImage\win-x86\FreeImage32.dll" Link="build\native\win-x86\FreeImage32.dll" PackagePath="build\native\win-x86\" />
     <Content Include="..\libs\FreeImage\linux-x64\libFreeImage64.so" Link="build\native\linux-x64\libFreeImage64.so" PackagePath="build\native\linux-x64\" />
