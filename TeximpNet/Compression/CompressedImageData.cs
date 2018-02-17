@@ -229,7 +229,7 @@ namespace TeximpNet.Compression
         private int CalculateSizeInBytes()
         {
             if(m_format == CompressionFormat.BGRA)
-                return m_width * m_height * 4;
+                return m_width * m_height * m_depth * 4;
 
             int formatSize = 0;
 
@@ -251,7 +251,7 @@ namespace TeximpNet.Compression
             int width = Math.Max(1, (m_width + 3) / 4);
             int height = Math.Max(1, (m_height + 3) / 4);
 
-            return width * height * formatSize;
+            return width * height * m_depth * formatSize;
         }
     }
 }
