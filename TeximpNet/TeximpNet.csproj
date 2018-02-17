@@ -11,12 +11,12 @@
     <Company />
     <Version>1.2.0</Version>
     <PackageLicenseUrl>http://opensource.org/licenses/mit-license.php</PackageLicenseUrl>
-    <Copyright>Copyright © 2016-2017 Nicholas Woodfield</Copyright>
+    <Copyright>Copyright © 2016-2018 Nicholas Woodfield</Copyright>
     <PackageIconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</PackageIconUrl>
     <PackageProjectUrl>http://bitbucket.org/Starnick/teximpnet</PackageProjectUrl>
     <RepositoryUrl>https://bitbucket.org/Starnick/teximpnet.git</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
-    <Description>A .NET texture IO and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.17.0 of FreeImage and version 2.1 of NVTT.</Description>
+    <Description>A .NET texture IO and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.17.0 of FreeImage and version 2.1.1 of NVTT.</Description>
     <PackageTags>Importers 3D Content Assets Texture Image Compression DDS DXT</PackageTags>
   </PropertyGroup>
 
