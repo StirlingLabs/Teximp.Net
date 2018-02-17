@@ -243,5 +243,24 @@ namespace TeximpNet.Test
 
             surface.Dispose();
         }
+
+        [Fact]
+        public void TestLoadRawData()
+        {
+            RGBAQuad[] data = new RGBAQuad[100];
+            int width = 10;
+            int height = 10;
+
+            for (int i = 0; i < 100; i++)
+                data[i] = new RGBAQuad(200, 5, 100, 255); //RGBA data, reddish color. If gets flipped, it'll come out as a purple-ish color.
+
+            IntPtr ptr = MemoryHelper.PinObject(data);
+
+            Surface newSurface = Surface.LoadFromRawData(ptr, width, height, width * 4, false, true);
+            Assert.NotNull(newSurface);
+
+            String outputFile = GetOutputFile("rawRedDot.bmp");
+            newSurface.SaveToFile(ImageFormat.BMP, outputFile);
+        }
     }
 }
