@@ -683,7 +683,10 @@ namespace TeximpNet.Compression
                 m_faceHasData.Clear();
 
                 System.Diagnostics.Debug.Assert(arrayCount == 1, "2D Array textures not supported yet, because the NVTT C-API doesn't (yet) expose it.");
-                System.Diagnostics.Debug.Assert(depth == 1 && type != TextureType.Texture3D, "Only 3D textures can have depth");
+
+                //If type is not a 3D texture, depth has to be 1...
+                if (type != TextureType.Texture3D)
+                    m_depth = depth = 1;
 
                 switch(type)
                 {

@@ -10,8 +10,8 @@ CHANGELOG
 	- Unmanaged library loading is now thread safe
 	- Simplified Compressor SetData/SetMipmapData API, they also properly handle input images that are padded
 	- Can set 3D image to compressor, 2D array (non-cube) are possible, but the C-API doesn't expose setting an array count yet...
-	- Added functions to Surface to easily convert from/to System.Drawing.Bitmap
 	- Added some more formats to convert FreeImage surfaces to
+	- Added a Surface.LoadFromRawData method to load from a 32-bit BGRA/RGBA image
 	- Added queries for bitmap palettes
 
 Targets:

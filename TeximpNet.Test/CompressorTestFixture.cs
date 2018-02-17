@@ -164,9 +164,10 @@ namespace TeximpNet.Test
                     GetDigits(digits, slice, 3);
 
                     String inputFile = GetInputFile(Path.Combine("3D_Perlin_Noise", String.Format(fileNameTemplate, digits[0].ToString(), digits[1].ToString(), digits[2].ToString())));
-                    using (Surface imageFromFile = Surface.LoadFromFile(inputFile))
+                    using (Surface imageFromFile = Surface.LoadFromFile(inputFile, true))
                     {
-                        imageFromFile.FlipVertically();
+                        //Make sure its 32-bit BGRA data
+                        imageFromFile.ConvertTo(ImageConversion.To32Bits);
 
                         //Copy contents of slice to our 3D image
                         MemoryHelper.CopyBGRAImageData(currSlice, imageFromFile.DataPtr, imageFromFile.Width, imageFromFile.Height, 1, imageFromFile.Pitch, 0);
@@ -180,7 +181,7 @@ namespace TeximpNet.Test
                 compressor.Input.GenerateMipmaps = true;
                 compressor.Input.SetTextureLayout(TextureType.Texture3D, width, height, depth);
                 compressor.Input.SetMipmapData(data, true, ImageInfo.From3D(width, height, depth));
-                compressor.Compression.Format = CompressionFormat.DXT1;
+                compressor.Compression.Format = CompressionFormat.BGRA; //DXT1 doesn't seem to load in the DirectX Texture tool...
 
                 String outputFile = GetOutputFile("3D_Perlin_Noise.dds");
                 Assert.True(compressor.Process(outputFile));
