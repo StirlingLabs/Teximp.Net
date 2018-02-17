@@ -24,9 +24,8 @@
     <VendorName>
     </VendorName>
     <DocumentationSources>
-      <DocumentationSource sourceFile="TeximpNet\bin\Release\TeximpNet.dll" />
-      <DocumentationSource sourceFile="TeximpNet\bin\Release\TeximpNet.xml" />
-    </DocumentationSources>
+      <DocumentationSource sourceFile="TeximpNet\bin\Release\net4\TeximpNet.dll" />
+<DocumentationSource sourceFile="TeximpNet\bin\Release\net4\TeximpNet.xml" /></DocumentationSources>
     <HelpTitle>TeximpNet Documentation %28February 2018%29</HelpTitle>
     <CopyrightText>Copyright &amp;#169%3b 2012-2018 AssimpNet - Nicholas Woodfield. All rights reserved.</CopyrightText>
     <NamespaceSummaries>
