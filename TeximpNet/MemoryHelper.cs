@@ -635,47 +635,89 @@ namespace TeximpNet
             int rowStride = width * formatSize;
             int depthStride = width * height * formatSize;
 
-            byte* pBGRA = (byte*)dstBgraPtr.ToPointer();
-            byte* pRGBA = (byte*)srcRgbaPtr.ToPointer();
-
-            int dstIndex = 0;
+            IntPtr dstPtr = dstBgraPtr;
+            IntPtr srcPtr = srcRgbaPtr;
 
             //Iterate for each depth
             for (int slice = 0; slice < depth; slice++)
             {
                 //Start with a pointer that points to the start of the slice
-                byte* srcRGBA = pRGBA;
+                IntPtr sPtr = srcPtr;
 
-                //And iterate over each line, and each texel in the line, and re-order the color and set it to destination 
+                //And iterate + copy each line per the height of the image
                 for (int row = 0; row < height; row++)
                 {
-                    //Reset the index at zero for each scanline
-                    int srcIndex = 0;
+                    CopyLineToBGRA(sPtr, dstPtr, width);
 
-                    //Go texel-by-texel
-                    for (int x = 0; x < width; x++)
-                    {
-                        //RGBA -> BGRA
-                        byte r = srcRGBA[srcIndex];
-                        byte g = srcRGBA[srcIndex + 1];
-                        byte b = srcRGBA[srcIndex + 2];
-                        byte a = srcRGBA[srcIndex + 3];
-
-                        pBGRA[dstIndex] = b;
-                        pBGRA[dstIndex + 1] = g;
-                        pBGRA[dstIndex + 2] = r;
-                        pBGRA[dstIndex + 3] = a;
-
-                        srcIndex += 4;
-                        dstIndex += 4;
-                    }
-
-                    //Advance to next scanline
-                    srcRGBA += rowPitch;
+                    //Advance the temporary slice pointer and the source pointer
+                    sPtr = MemoryHelper.AddIntPtr(sPtr, rowPitch);
+                    dstPtr = MemoryHelper.AddIntPtr(dstPtr, rowStride);
                 }
 
                 //Advance the src pointer by the slice pitch to get to the next image
-                pRGBA += slicePitch;
+                srcPtr = MemoryHelper.AddIntPtr(srcPtr, slicePitch);
+            }
+        }
+
+        /// <summary>
+        /// Copies texel by texel in the scanline, swapping R and B components along the way.
+        /// </summary>
+        /// <param name="rgbaLine">Scanline of RGBA texels, the source data.</param>
+        /// <param name="bgraLine">Scanline of BGRA texels, the destination data.</param>
+        /// <param name="count">Number of texels to copy.</param>
+        public static unsafe void CopyLineToBGRA(IntPtr rgbaLine, IntPtr bgraLine, int count)
+        {
+            byte* rgbaPtr = (byte*)rgbaLine.ToPointer();
+            byte* bgraPtr = (byte*)bgraLine.ToPointer();
+
+            for(int i = 0, byteIndex = 0; i < count; i++, byteIndex += 4)
+            {
+                int index0 = byteIndex;
+                int index1 = byteIndex + 1;
+                int index2 = byteIndex + 2;
+                int index3 = byteIndex + 3;
+
+                //RGBA -> BGRA
+                byte r = rgbaPtr[index0];
+                byte g = rgbaPtr[index1];
+                byte b = rgbaPtr[index2];
+                byte a = rgbaPtr[index3];
+
+                bgraPtr[index0] = b;
+                bgraPtr[index1] = g;
+                bgraPtr[index2] = r;
+                bgraPtr[index3] = a;
+            }
+        }
+
+        /// <summary>
+        /// Copies texel by texel in the scanline, swapping B and R components along the way.
+        /// </summary>
+        /// <param name="bgraLine">Scanline of BGRA texels, the source data.</param>
+        /// <param name="rgbaLine">Scanline of RGBA texels, the destination data.</param>
+        /// <param name="count">Number of texels to copy.</param>
+        public static unsafe void CopyLineToRGBA(IntPtr bgraLine, IntPtr rgbaLine, int count)
+        {
+            byte* rgbaPtr = (byte*)rgbaLine.ToPointer();
+            byte* bgraPtr = (byte*)bgraLine.ToPointer();
+
+            for (int i = 0, byteIndex = 0; i < count; i++, byteIndex += 4)
+            {
+                int index0 = byteIndex;
+                int index1 = byteIndex + 1;
+                int index2 = byteIndex + 2;
+                int index3 = byteIndex + 3;
+
+                //BGRA -> RGBA
+                byte b = bgraPtr[index0];
+                byte g = bgraPtr[index1];
+                byte r = bgraPtr[index2];
+                byte a = bgraPtr[index3];
+
+                rgbaPtr[index0] = r;
+                rgbaPtr[index1] = g;
+                rgbaPtr[index2] = b;
+                rgbaPtr[index3] = a;
             }
         }
     }

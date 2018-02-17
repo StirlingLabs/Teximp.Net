@@ -45,7 +45,7 @@ namespace TeximpNet
             {
                 FreeImageLibrary lib = FreeImageLibrary.Instance;
                 if (lib == null || !lib.IsLibraryLoaded)
-                    return false;
+                    return true; //True for most platforms
 
                 return lib.IsLittleEndian;
             }
@@ -64,6 +64,23 @@ namespace TeximpNet
             get
             {
                 return IsLittleEndian;
+            }
+        }
+
+        /// <summary>
+        /// Gets a struct that contains further details about color order that FreeImage expects (this is coupled to endianness). Such information
+        /// includes the default mask values that are used for 4-component color channels.
+        /// </summary>
+        /// <remarks>
+        /// Note: This is based on the default compilation options for the FreeImage library. You can compile
+        /// the library to use a hardcoded color order which we cannot detect. Make sure the native library is compiled
+        /// with the default color order that is coupled to endianness.
+        /// </remarks>
+        public static ColorOrder ColorOrder
+        {
+            get
+            {
+                return new ColorOrder(IsLittleEndian);
             }
         }
 
@@ -425,6 +442,59 @@ namespace TeximpNet
                 surface.FlipVertically();
 
             return surface;
+        }
+
+        /// <summary>
+        /// Loads a surface from a raw 32-bit RGBA/BGRA image.
+        /// </summary>
+        /// <param name="imageDataPtr">Pointer to image data.</param>
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="height">Height of the image, in texels.</param>
+        /// <param name="rowPitch">Pitch of the image, the # of bytes per scanline, which may include padding. </param>
+        /// <param name="isBGRA">True if the data is BGRA, false if RGBA ordering. The input image may have to be converted to the default color ordering of the FreeImage surface (usually BGRA).</param>
+        /// <param name="isTopDown">True if the image origin is considered to be upper left, false if lower left. FreeImage images are lower left origin, so if true this will cause the image data to be flipped vertically.</param>
+        /// <returns>Surface containing the image, or null of there was an error in loading.</returns>
+        public static Surface LoadFromRawData(IntPtr imageDataPtr, int width, int height, int rowPitch, bool isBGRA, bool isTopDown = false)
+        {
+            ColorOrder colorOrder = Surface.ColorOrder;
+
+            if (colorOrder.IsBGRAOrder != isBGRA)
+            {
+                //Need to convert data
+                IntPtr tempData = MemoryHelper.AllocateMemory(width * height * 4); //32 bpp pixels
+
+                try
+                {
+                    if(isBGRA)
+                    {
+                        //Convert to RGBA
+                        MemoryHelper.CopyBGRAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
+                    }
+                    else
+                    {
+                        //Convert to BGRA
+                        MemoryHelper.CopyRGBAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
+                    }
+
+                    IntPtr surfacePtr = FreeImageLibrary.Instance.ConvertFromRawBitsEx(true, tempData, ImageType.Bitmap, width, height, width * 4, 32, colorOrder.RedMask, colorOrder.GreenIndex, colorOrder.BlueMask, isTopDown);
+                    if (surfacePtr == IntPtr.Zero)
+                        return null;
+
+                    return new Surface(surfacePtr);
+                }
+                finally
+                {
+                    MemoryHelper.FreeMemory(tempData);
+                }
+            }
+            else
+            {
+                IntPtr surfacePtr = FreeImageLibrary.Instance.ConvertFromRawBitsEx(true, imageDataPtr, ImageType.Bitmap, width, height, rowPitch, 32, colorOrder.RedMask, colorOrder.GreenIndex, colorOrder.BlueMask, isTopDown);
+                if (surfacePtr == IntPtr.Zero)
+                    return null;
+
+                return new Surface(surfacePtr);
+            }
         }
 
         /// <summary>

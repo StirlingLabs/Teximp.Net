@@ -48,11 +48,17 @@ namespace TeximpNet.Unmanaged
         Mac
     }
 
+    /// <summary>
+    /// An attribute that represents the name of an unmanaged function to import.
+    /// </summary>
     [AttributeUsage(AttributeTargets.Delegate)]
     public class UnmanagedFunctionNameAttribute : Attribute
     {
         private String m_unmanagedFunctionName;
 
+        /// <summary>
+        /// Name of the unmanaged function.
+        /// </summary>
         public String UnmanagedFunctionName
         {
             get
@@ -61,12 +67,21 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="UnmanagedFunctionName"/>.
+        /// </summary>
+        /// <param name="unmanagedFunctionName">Name of the function.</param>
         public UnmanagedFunctionNameAttribute(String unmanagedFunctionName)
         {
             m_unmanagedFunctionName = unmanagedFunctionName;
         }
     }
 
+    /// <summary>
+    /// Represents management and access to an unmanaged library. An unmanaged library can be loaded and unloaded dynamically. The library then searches for a list
+    /// of exported functions to create managed delegates for, allowing callers to access the library. Each OS platform has its own implementation to determine how to load
+    /// unmanaged libraries.
+    /// </summary>
     public abstract class UnmanagedLibrary
     {
         private static Object s_defaultLoadSync = new Object();
@@ -75,10 +90,19 @@ namespace TeximpNet.Unmanaged
         private String m_libraryPath = String.Empty;
         private volatile bool m_checkNeedsLoading = true;
 
+        /// <summary>
+        /// Occurs when the unmanaged library is loaded.
+        /// </summary>
         public event EventHandler LibraryLoaded;
 
+        /// <summary>
+        /// Occurs when the unmanaged library is freed.
+        /// </summary>
         public event EventHandler LibraryFreed;
 
+        /// <summary>
+        /// Queries if the unmanaged library has been loaded or not.
+        /// </summary>
         public bool IsLibraryLoaded
         {
             get
@@ -87,6 +111,9 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Queries the default path to the 32-bit unmanaged library DLL.
+        /// </summary>
         public String DefaultLibraryPath32Bit
         {
             get
@@ -95,6 +122,9 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Queries the default path to the 64-bit unmanaged library DLL.
+        /// </summary>
         public String DefaultLibraryPath64bit
         {
             get
@@ -103,6 +133,9 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Queries the path to the unmanaged library DLL that is currently loaded.
+        /// </summary>
         public String LibraryPath
         {
             get
@@ -111,6 +144,9 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Queries if the OS is 64-bit, if false then it is 32-bit.
+        /// </summary>
         public static bool Is64Bit
         {
             get
@@ -119,11 +155,21 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Constructs a new <see cref="UnmanagedLibrary"/>.
+        /// </summary>
+        /// <param name="default32BitName">Default name (NOT path) of the 32-bit unmanaged library.</param>
+        /// <param name="default64BitName">Default name (NOT path) of the 64-bit unmanaged library.</param>
+        /// <param name="unmanagedFunctionDelegateTypes">Delegate types to instantiate and load.</param>
         protected UnmanagedLibrary(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes)
         {
             CreateRuntimeImplementation(default32BitName, default64BitName, unmanagedFunctionDelegateTypes);
         }
 
+        /// <summary>
+        /// Gets an enum representing the current OS that is application is executing on.
+        /// </summary>
+        /// <returns>Platform enumeration.</returns>
         public static Platform GetPlatform()
         {
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -138,20 +184,39 @@ namespace TeximpNet.Unmanaged
             throw new InvalidOperationException("Cannot determine OS-specific implementation.");
         }
 
+        /// <summary>
+        /// Loads the unmanaged library using the default library paths based on the OS bitness.
+        /// </summary>
+        /// <returns>True if the library was found and successfully loaded.</returns>
         public bool LoadLibrary()
         {
             return LoadLibrary((Is64Bit) ? DefaultLibraryPath64bit : DefaultLibraryPath32Bit);
         }
 
+        /// <summary>
+        /// Loads the unmanaged library using the supplied 32 and 64 bit paths, the one chosen is based on the OS bitness.
+        /// </summary>
+        /// <param name="lib32Path">Path to the 32-bit DLL</param>
+        /// <param name="lib64Path">Path to the 64-bit DLL</param>
+        /// <returns>True if the library was found and successfully loaded.</returns>
         public bool LoadLibrary(String lib32Path, String lib64Path)
         {
             return LoadLibrary((Is64Bit) ? lib64Path : lib32Path);
         }
 
+        /// <summary>
+        /// Loads the unmanaged library using the supplied path.
+        /// </summary>
+        /// <param name="libPath">Path to the unmanaged DLL.</param>
+        /// <returns>True if the library was found and successfully loaded.</returns>
         public bool LoadLibrary(String libPath)
         {
             if (IsLibraryLoaded)
-                throw new TeximpException("Unmanaged library already loaded");
+            {
+                //Ignore repeated calls...but do assert
+                System.Diagnostics.Debug.Assert(false, "Library already loaded");
+                return true;
+            }
 
             //Automatically append extension if necessary
             if(!Path.HasExtension(libPath))
@@ -169,6 +234,10 @@ namespace TeximpNet.Unmanaged
             return false;
         }
 
+        /// <summary>
+        /// Frees the unmanaged library that is currently loaded.
+        /// </summary>
+        /// <returns></returns>
         public bool FreeLibrary()
         {
             if (IsLibraryLoaded)
@@ -185,6 +254,12 @@ namespace TeximpNet.Unmanaged
             return false;
         }
 
+        /// <summary>
+        /// Gets a delegate based on the unmanaged function name.
+        /// </summary>
+        /// <typeparam name="T">Type of delegate.</typeparam>
+        /// <param name="funcName">Name of unmanaged function that is exported by the library.</param>
+        /// <returns>The delegate, or null if not found.</returns>
         public T GetFunction<T>(String funcName) where T : class
         {
             return m_impl.GetFunction<T>(funcName);
@@ -209,7 +284,10 @@ namespace TeximpNet.Unmanaged
             }
         }
 
-        private void OnLibraryLoaded()
+        /// <summary>
+        /// Called when the library is loaded.
+        /// </summary>
+        protected virtual void OnLibraryLoaded()
         {
             EventHandler evt = LibraryLoaded;
 
@@ -217,7 +295,10 @@ namespace TeximpNet.Unmanaged
                 evt(this, EventArgs.Empty);
         }
 
-        private void OnLibraryFreed()
+        /// <summary>
+        /// Called when the library is freed.
+        /// </summary>
+        protected virtual void OnLibraryFreed()
         {
             EventHandler evt = LibraryFreed;
 

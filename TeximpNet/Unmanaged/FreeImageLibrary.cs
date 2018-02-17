@@ -26,6 +26,9 @@ using System.Runtime.InteropServices;
 
 namespace TeximpNet.Unmanaged
 {
+    /// <summary>
+    /// Manages the lifetime and access to the FreeImage native library.
+    /// </summary>
     public sealed class FreeImageLibrary : UnmanagedLibrary
     {
         private static readonly Object s_sync = new Object();
@@ -45,6 +48,9 @@ namespace TeximpNet.Unmanaged
 
         private FreeImageIOHandler m_ioHandler;
 
+        /// <summary>
+        /// Gets the instance of the FreeImage library. This is thread-safe.
+        /// </summary>
         public static FreeImageLibrary Instance
         {
             get
@@ -66,15 +72,21 @@ namespace TeximpNet.Unmanaged
         {
             get
             {
-                if(m_isLittleEndian.HasValue)
+                if (m_isLittleEndian.HasValue)
                     return m_isLittleEndian.Value;
 
-                LoadIfNotLoaded();
-                
-                Functions.FreeImage_IsLittleEndian func = GetFunction<Functions.FreeImage_IsLittleEndian>(FunctionNames.FreeImage_IsLittleEndian);
+                return true; //Most often the case... 
+            }
+        }
 
-                m_isLittleEndian = func();
-                return m_isLittleEndian.Value;
+        /// <summary>
+        /// Gets the default color order / component masks for the red, green, blue, alpha channels.
+        /// </summary>
+        public ColorOrder ColorOrder
+        {
+            get
+            {
+                return new ColorOrder(IsLittleEndian);
             }
         }
 
@@ -89,13 +101,51 @@ namespace TeximpNet.Unmanaged
             return new FreeImageLibrary(Default32BitName, Default64BitName, Helper.GetNestedTypes(typeof(Functions)));
         }
 
+        /// <summary>
+        /// Called when the library is loaded.
+        /// </summary>
+        protected override void OnLibraryLoaded()
+        {
+            Functions.FreeImage_IsLittleEndian func = GetFunction<Functions.FreeImage_IsLittleEndian>(FunctionNames.FreeImage_IsLittleEndian);
+            m_isLittleEndian = func();
+
+            base.OnLibraryLoaded();
+        }
+
+        /// <summary>
+        /// Called when the library is freed.
+        /// </summary>
+        protected override void OnLibraryFreed()
+        {
+            m_isLittleEndian = null;
+
+            base.OnLibraryFreed();
+        }
+
         #region Allocate / Clone / Unload
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="bpp"></param>
+        /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public IntPtr Allocate(int width, int height, int bpp)
         {
             return Allocate(width, height, bpp, 0, 0, 0);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="bpp"></param>
+        /// <param name="red_mask"></param>
+        /// <param name="green_mask"></param>
+        /// <param name="blue_mask"></param>
+        /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public IntPtr Allocate(int width, int height, int bpp, uint red_mask, uint green_mask, uint blue_mask)
         {
             LoadIfNotLoaded();
@@ -105,6 +155,17 @@ namespace TeximpNet.Unmanaged
             return func(width, height, bpp, red_mask, green_mask, blue_mask);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="imageType"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="bpp"></param>
+        /// <param name="red_mask"></param>
+        /// <param name="green_mask"></param>
+        /// <param name="blue_mask"></param>
+        /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public IntPtr AllocateT(ImageType imageType, int width, int height, int bpp, uint red_mask, uint green_mask, uint blue_mask)
         {
             LoadIfNotLoaded();
@@ -114,6 +175,11 @@ namespace TeximpNet.Unmanaged
             return func(imageType, width, height, bpp, red_mask, green_mask, blue_mask);
         }
 
+        /// <summary>
+        /// Clones the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to the FreeImage bitmap.</param>
+        /// <returns>Cloned image.</returns>
         public IntPtr Clone(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -126,6 +192,10 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Frees memory used by the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to the FreeImage bitmap.</param>
         public void Unload(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -138,6 +208,15 @@ namespace TeximpNet.Unmanaged
             func(bitmap);
         }
 
+        /// <summary>
+        /// Copies data from the specified rectangle in the source image, and returns it as another bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to the FreeImage bitmap.</param>
+        /// <param name="left">Leftmost texel.</param>
+        /// <param name="top">Topmost texel.</param>
+        /// <param name="right">Rightmost texel.</param>
+        /// <param name="bottom">Bottommost texel.</param>
+        /// <returns></returns>
         public IntPtr Copy(IntPtr bitmap, int left, int top, int right, int bottom)
         {
             if(bitmap == IntPtr.Zero)
@@ -150,6 +229,16 @@ namespace TeximpNet.Unmanaged
             return func(bitmap, left, top, right, bottom);
         }
 
+        /// <summary>
+        /// Pastes data from one bitmap into another, starting at the texel coordinate specified. The width and height of the
+        /// data is determined by the source bitmap width and height.
+        /// </summary>
+        /// <param name="dstBitmap">Pointer to the destination FreeImage bitmap.</param>
+        /// <param name="srcBitmap">Pointer to the source FreeImage bitmap.</param>
+        /// <param name="left">X origin texel.</param>
+        /// <param name="top">Y origin texel.</param>
+        /// <param name="alpha">Alpha blend factor.</param>
+        /// <returns>True if the operation was successful, false if otherwise.</returns>
         public bool Paste(IntPtr dstBitmap, IntPtr srcBitmap, int left, int top, int alpha)
         {
             if(dstBitmap == IntPtr.Zero || srcBitmap == IntPtr.Zero)
@@ -166,6 +255,12 @@ namespace TeximpNet.Unmanaged
 
         #region Load / Save
 
+        /// <summary>
+        /// Loads an image from a file. The format is determined automatically.
+        /// </summary>
+        /// <param name="filename">File containing the image to load from.</param>
+        /// <param name="flags">Load flags.</param>
+        /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public IntPtr LoadFromFile(String filename, ImageLoadFlags flags = ImageLoadFlags.Default)
         {
             if(String.IsNullOrEmpty(filename))
@@ -192,6 +287,12 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Loads an image from the stream. The format is determined automatically.
+        /// </summary>
+        /// <param name="stream">Stream to read data from.</param>
+        /// <param name="flags">Load flags.</param>
+        /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public unsafe IntPtr LoadFromStream(Stream stream, ImageLoadFlags flags = ImageLoadFlags.Default)
         {
             if (stream == null || !stream.CanRead)
@@ -216,6 +317,14 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Saves the image to a file.
+        /// </summary>
+        /// <param name="format">Image format to save as.</param>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="filename">File path at which to create a file to save the data at.</param>
+        /// <param name="flags">Save flags.</param>
+        /// <returns>True if the operation was successfully, false if otherwise.</returns>
         public bool SaveToFile(ImageFormat format, IntPtr bitmap, String filename, ImageSaveFlags flags = ImageSaveFlags.Default)
         {
             if(String.IsNullOrEmpty(filename) || format == ImageFormat.Unknown || bitmap == IntPtr.Zero)
@@ -236,6 +345,14 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Saves the image to a stream.
+        /// </summary>
+        /// <param name="format">Image format to save as.</param>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="stream">Stream to write data to.</param>
+        /// <param name="flags">Save flags.</param>
+        /// <returns>True if the operation was successfully, false if otherwise.</returns>
         public unsafe bool SaveToStream(ImageFormat format, IntPtr bitmap, Stream stream, ImageSaveFlags flags = ImageSaveFlags.Default)
         {
             if (stream == null || !stream.CanWrite || format == ImageFormat.Unknown || bitmap == IntPtr.Zero)
@@ -256,6 +373,11 @@ namespace TeximpNet.Unmanaged
 
         #region Query routines
 
+        /// <summary>
+        /// Queries whether the bitmap has pixel data.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>True if the bitmap has pixels, false if not.</returns>
         public bool HasPixels(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -268,6 +390,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Determines the file format based on the filename.
+        /// </summary>
+        /// <param name="filename">Filename</param>
+        /// <returns>Image format.</returns>
         public ImageFormat GetFileTypeFromFile(String filename)
         {
             if(String.IsNullOrEmpty(filename))
@@ -289,6 +416,11 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Determines the file format based on the contents of the stream.
+        /// </summary>
+        /// <param name="stream">Stream</param>
+        /// <returns>Image format.</returns>
         public unsafe ImageFormat GetFileTypeFromStream(Stream stream)
         {
             if (stream == null || !stream.CanRead)
@@ -305,6 +437,11 @@ namespace TeximpNet.Unmanaged
             }
         }
 
+        /// <summary>
+        /// Queries the image type from the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Image type.</returns>
         public ImageType GetImageType(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -317,6 +454,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Queries the color model from the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Image color model.</returns>
         public ImageColorType GetImageColorType(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -329,6 +471,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Queries the image data from the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Pointer to the image data.</returns>
         public IntPtr GetData(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -341,6 +488,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Queries the palette data from the FreeImage bitmap, if it has one.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Pointer to the palette color array.</returns>
         public IntPtr GetPalette(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
@@ -353,6 +505,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Queries the number of colors in the palette array from the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Number of palette entries, or zero if no palette exists.</returns>
         public uint GetPaletteColorCount(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
@@ -365,6 +522,12 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Gets the scanline from the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="scanline">Row to get the scanline, in range of [0, Image Height)</param>
+        /// <returns>Pointer to scanline data.</returns>
         public IntPtr GetScanLine(IntPtr bitmap, int scanline)
         {
             if(bitmap == IntPtr.Zero)
@@ -377,6 +540,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap, scanline);
         }
 
+        /// <summary>
+        /// Gets the number of bits per pixel contained in the FreeImage bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Bits per pixel of the image.</returns>
         public int GetBitsPerPixel(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -389,6 +557,11 @@ namespace TeximpNet.Unmanaged
             return (int) func(bitmap);
         }
 
+        /// <summary>
+        /// Gets the width of the FreeImage bitmap, in texels.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Width of the image.</returns>
         public int GetWidth(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -401,6 +574,11 @@ namespace TeximpNet.Unmanaged
             return (int) func(bitmap);
         }
 
+        /// <summary>
+        /// Gets the height of the FreeImage bitmap, in texels.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Height of the image.</returns>
         public int GetHeight(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -413,6 +591,11 @@ namespace TeximpNet.Unmanaged
             return (int) func(bitmap);
         }
 
+        /// <summary>
+        /// Gets the pitch of the bitmap, this is the # of bytes per row, which may or may not have padding.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Pitch</returns>
         public int GetPitch(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -425,6 +608,11 @@ namespace TeximpNet.Unmanaged
             return (int) func(bitmap);
         }
 
+        /// <summary>
+        /// Gets the mask value to isolate the red component of a texel.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Red mask</returns>
         public uint GetRedMask(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -437,6 +625,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Gets the mask value to isolate the green component of a texel.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Green mask</returns>
         public uint GetGreenMask(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -449,6 +642,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Gets the mask value to isolate the blue component of a texel.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>Blue mask</returns>
         public uint GetBlueMask(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -461,6 +659,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Determines if the image has any transparency.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>True if the image has transparency, false if otherwise.</returns>
         public bool IsTransparent(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -477,6 +680,11 @@ namespace TeximpNet.Unmanaged
 
         #region Conversion routines
 
+        /// <summary>
+        /// Converts a bitmap to a 4 bit paletized format.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertTo4Bits(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -489,6 +697,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to a 8 bit paletized format.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertTo8Bits(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -501,6 +714,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to a 16 bit format where 5 bits for red, green, blue.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertTo16Bits555(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -513,6 +731,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to a 16 bit format where 5 bits for red, 6 bits for green, 5 for blue.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertTo16Bits565(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -525,6 +748,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to a 24-bit RGBA bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertTo24Bits(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -537,6 +765,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to a 32-bit RGBA bitmap.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertTo32Bits(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -549,6 +782,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to a 8-bit paletized greyscale format.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertToGreyscale(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -561,6 +799,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to 32-bit IEEE float.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertToFloat(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
@@ -573,6 +816,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to RGB format where each component has 32 bits and is a IEEE float.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertToRGBF(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
@@ -585,6 +833,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to RGBA format where each component has 32 bits and is a IEEE float.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertToRGBAF(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
@@ -597,6 +850,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to UINT16 format.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertToUINT16(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
@@ -609,6 +867,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to RGB color format where each component has 16 bits.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertToRGB16(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
@@ -621,34 +884,54 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Converts a bitmap to RGBA color format where each component has 16 bits.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>FreeImage Bitmap</returns>
         public IntPtr ConvertToRGBA16(IntPtr bitmap)
         {
             if (bitmap == IntPtr.Zero)
                 return IntPtr.Zero;
 
             LoadIfNotLoaded();
-
+            
             Functions.FreeImage_ConvertToRGBA16 func = GetFunction<Functions.FreeImage_ConvertToRGBA16>(FunctionNames.FreeImage_ConvertToRGBA16);
 
             return func(bitmap);
         }
 
-        public bool ConvertToRawBits(IntPtr data, IntPtr bitmap)
+        /// <summary>
+        /// Creates a FreeImage surface from raw data.
+        /// </summary>
+        /// <param name="copySource">True to copy the source data, false to hold onto the data pointer.</param>
+        /// <param name="data">Image data pointer.</param>
+        /// <param name="imageType">Type of bitmap to create.</param>
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="height">Height of the image, in texels.</param>
+        /// <param name="pitch">Pitch of the input image data.</param>
+        /// <param name="bpp">Bits per pixel of the input data.</param>
+        /// <param name="redMask">Red component mask.</param>
+        /// <param name="greenMask">Green component mask.</param>
+        /// <param name="blueMask">Blue component mask.</param>
+        /// <param name="topDown">True if the input image's origin is the upper left, false if lower left.</param>
+        /// <returns>FreeImage surface, or null if an error occured.</returns>
+        public IntPtr ConvertFromRawBitsEx(bool copySource, IntPtr data, ImageType imageType, int width, int height, int pitch, uint bpp, uint redMask, uint greenMask, uint blueMask, bool topDown)
         {
-            return ConvertToRawBits(data, bitmap, false);
+            if (data == IntPtr.Zero)
+                return IntPtr.Zero;
+
+            Functions.FreeImage_ConvertFromRawBitsEx func = GetFunction<Functions.FreeImage_ConvertFromRawBitsEx>(FunctionNames.FreeImage_ConvertFromRawBitsEx);
+
+            return func(copySource, data, imageType, width, height, pitch, bpp, redMask, greenMask, blueMask, topDown);
         }
 
-        public bool ConvertToRawBits(IntPtr data, IntPtr bitmap, bool topDown)
-        {
-            if(data == IntPtr.Zero || bitmap == IntPtr.Zero)
-                return false;
-
-            Functions.FreeImage_ConvertToRawBits func = GetFunction<Functions.FreeImage_ConvertToRawBits>(FunctionNames.FreeImage_ConvertToRawBits);
-
-            func(data, bitmap, GetPitch(bitmap), (uint) GetBitsPerPixel(bitmap), (uint) GetRedMask(bitmap), (uint) GetGreenMask(bitmap), (uint) GetBlueMask(bitmap), topDown);
-            return true;
-        }
-
+        /// <summary>
+        /// Converts an image of any stype to a standard 8-bit greyscale image.
+        /// </summary>
+        /// <param name="src">Source FreeImage object.</param>
+        /// <param name="scaleLinearly">True if the image data should be scaled linearly, false if not.</param>
+        /// <returns>FreeImage surface containing converted image.</returns>
         public IntPtr ConvertToStandardType(IntPtr src, bool scaleLinearly)
         {
             if(src == IntPtr.Zero)
@@ -659,6 +942,13 @@ namespace TeximpNet.Unmanaged
             return func(src, scaleLinearly);
         }
 
+        /// <summary>
+        /// Converts a FreeImage surface to another image type, optionally scaling the data.
+        /// </summary>
+        /// <param name="src">Source FreeImage object.</param>
+        /// <param name="dstType">Type of image to convert to.</param>
+        /// <param name="scaleLinearly">True if the image data should be scaled linearly, false if not.</param>
+        /// <returns>FreeImage surface containing converted image.</returns>
         public IntPtr ConvertToType(IntPtr src, ImageType dstType, bool scaleLinearly)
         {
             if(src == IntPtr.Zero)
@@ -673,6 +963,11 @@ namespace TeximpNet.Unmanaged
 
         #region Image manipulation
 
+        /// <summary>
+        /// Flips the image contents horizontally along the vertical axis, in place.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public bool FlipHorizontal(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -685,6 +980,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Flips the image contents vertically along the horizontal axis, in place.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public bool FlipVertical(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -697,6 +997,14 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Resizes the image by resampling (or scaling, zooming). This allocates a new surface with the new scale.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="dst_width">Destination width.</param>
+        /// <param name="dst_height">Destination height.</param>
+        /// <param name="filter">Filter algorithm used for sampling.</param>
+        /// <returns>Rescaled FreeImage bitmap.</returns>
         public IntPtr Rescale(IntPtr bitmap, int dst_width, int dst_height, ImageFilter filter)
         {
             if(bitmap == IntPtr.Zero)
@@ -709,6 +1017,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap, dst_width, dst_height, filter);
         }
 
+        /// <summary>
+        /// Applies the alpha value of each pixel to its color components. The alpha value stays unchanged. Only works with 32-bits color depth.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public bool PreMultiplyWithAlpha(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -721,6 +1034,12 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Performs gamma correction on a 8-, 24- or 32-bit image.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="gamma">Gamma value (greater than zero). A value of 1.0 leaves the image, less darkens, and greater than one lightens.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public bool AdjustGamma(IntPtr bitmap, double gamma)
         {
             if(bitmap == IntPtr.Zero)
@@ -733,6 +1052,12 @@ namespace TeximpNet.Unmanaged
             return func(bitmap, gamma);
         }
 
+        /// <summary>
+        /// Adjusts the brightness of a 8-, 24- or 32-bit image by a certain amount.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="percentage">A value of zero means no change, less than zero will make the image darker, and greater than zero will make the image brighter.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public bool AdjustBrightness(IntPtr bitmap, double percentage)
         {
             if(bitmap == IntPtr.Zero)
@@ -745,6 +1070,12 @@ namespace TeximpNet.Unmanaged
             return func(bitmap, percentage);
         }
 
+        /// <summary>
+        /// Adjusts the contrast of a 8-, 24- or 32-bit image by a certain amount.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="percentage">A value of zero means no change, less than zero will decrease the contrast, and greater than zero will increase the contrast.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public bool AdjustContrast(IntPtr bitmap, double percentage)
         {
             if(bitmap == IntPtr.Zero)
@@ -757,6 +1088,11 @@ namespace TeximpNet.Unmanaged
             return func(bitmap, percentage);
         }
 
+        /// <summary>
+        /// Inverts each pixel data.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public bool Invert(IntPtr bitmap)
         {
             if(bitmap == IntPtr.Zero)
@@ -769,6 +1105,14 @@ namespace TeximpNet.Unmanaged
             return func(bitmap);
         }
 
+        /// <summary>
+        /// Swaps two specified colors on a 1-, 4- or 8-bit palletized or a 16-, 24- or 32-bit high color image.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="colorToReplace">Color value to find in image to replace.</param>
+        /// <param name="colorToReplaceWith">Color value to replace with.</param>
+        /// <param name="ignoreAlpha">True if alpha should be ignored or not, meaning if colors in a 32-bit image should be treated as 24-bit.</param>
+        /// <returns>True if the operation was successful, false otherwise.</returns>
         public unsafe int SwapColors(IntPtr bitmap, RGBAQuad colorToReplace, RGBAQuad colorToReplaceWith, bool ignoreAlpha)
         {
             if(bitmap == IntPtr.Zero)
@@ -794,6 +1138,12 @@ namespace TeximpNet.Unmanaged
             return (int) func(bitmap, new IntPtr(&colorToReplace), new IntPtr(&colorToReplaceWith), ignoreAlpha);
         }
 
+        /// <summary>
+        /// Rotates the image by an angle. This allocates a new surface, and if the operation is successful,
+        /// the old surface is disposed of.
+        /// </summary>
+        /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
+        /// <param name="angle">Angle to rotate, in degrees.</param>
         public IntPtr Rotate(IntPtr bitmap, double angle)
         {
             if(bitmap == IntPtr.Zero)
@@ -808,6 +1158,10 @@ namespace TeximpNet.Unmanaged
 
         #region Versioning
 
+        /// <summary>
+        /// Gets the version of the native DLL that is loaded.
+        /// </summary>
+        /// <returns>Version string</returns>
         public String GetVersion()
         {
             LoadIfNotLoaded();
@@ -822,6 +1176,10 @@ namespace TeximpNet.Unmanaged
             return Marshal.PtrToStringAnsi(ptr);
         }
 
+        /// <summary>
+        /// Gets the FreeImage copyright message.
+        /// </summary>
+        /// <returns>Legal copyright string.</returns>
         public String GetCopyrightMessage()
         {
             LoadIfNotLoaded();
@@ -891,7 +1249,7 @@ namespace TeximpNet.Unmanaged
 
             #region Conversion routines
 
-            public const String FreeImage_ConvertToRawBits = "FreeImage_ConvertToRawBits";
+            public const String FreeImage_ConvertFromRawBitsEx = "FreeImage_ConvertFromRawBitsEx";
             public const String FreeImage_ConvertToStandardType = "FreeImage_ConvertToStandardType";
             public const String FreeImage_ConvertToType = "FreeImage_ConvertToType";
             public const String FreeImage_ConvertTo4Bits = "FreeImage_ConvertTo4Bits";
@@ -1081,14 +1439,14 @@ namespace TeximpNet.Unmanaged
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToRGBA16)]
             public delegate IntPtr FreeImage_ConvertToRGBA16(IntPtr bitmap);
 
-            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToRawBits)]
-            public delegate void FreeImage_ConvertToRawBits(IntPtr data, IntPtr bitmap, int pitch, uint bpp, uint red_mask, uint green_mask, uint blue_mask, [In, MarshalAs(UnmanagedType.Bool)] bool topdown);
-
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToStandardType)]
             public delegate IntPtr FreeImage_ConvertToStandardType(IntPtr src, [MarshalAs(UnmanagedType.Bool)] bool scaleLinearly);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertToType)]
             public delegate IntPtr FreeImage_ConvertToType(IntPtr src, ImageType dstType, [MarshalAs(UnmanagedType.Bool)] bool scaleLinearly);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.FreeImage_ConvertFromRawBitsEx)]
+            public delegate IntPtr FreeImage_ConvertFromRawBitsEx([In, MarshalAs(UnmanagedType.Bool)] bool copySource, IntPtr data, ImageType type, int width, int height, int pitch, uint bpp, uint redMask, uint greenMask, uint blueMask, [In, MarshalAs(UnmanagedType.Bool)] bool topdown);
 
             #endregion
 
