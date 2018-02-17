@@ -25,7 +25,7 @@ TeximpNet officially targets the **.NET Standard 1.3** and supplies binaries for
 preferred platform, you may have to build and supply the native binaries yourself.
 
 Additionally, the NuGet package has targets for **.NET Framework 4.x** and **.NET Framework 3.5** should you need them. It was compiled with Visual Studio 2017, but it has been compiled on Ubuntu using the DotNet CLI. There is one **build-time only** dependency, an IL Patcher also distributed as a cross-platform NuGet package. As long as you're
-able to build with Visual Studio or the DotNet CLI, the library *should* compile without issue.
+able to build with Visual Studio or the DotNet CLI, the library *should* compile without issue on any platform.
 
 ## Licensing ##
 
