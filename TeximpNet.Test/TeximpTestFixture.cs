@@ -71,12 +71,12 @@ namespace TeximpNet.Test
 
         protected String GetOutputFile(String fileName)
         {
-            return Path.Combine(TestHelper.RootPath, m_outputPath, fileName);
+            return Path.Combine(m_outputPath, fileName);
         }
 
         protected String GetInputFile(String fileName)
         {
-            return Path.Combine(TestHelper.RootPath, m_inputPath, fileName);
+            return Path.Combine(m_inputPath, fileName);
         }
     }
 }
