@@ -1,4 +1,4 @@
-**The latest release can be downloaded from the [Downloads](https://bitbucket.org/Starnick/teximpnet/downloads) section or via [NuGet](https://www.nuget.org/packages/TeximpNet/).**
+**The latest release can be downloaded via  [NuGet](https://www.nuget.org/packages/TeximpNet/).**
 
 ## Introduction ##
 This is the official repository for **TeximpNet**, a cross-platform .NET wrapper for the [FreeImage](http://freeimage.sourceforge.net/) and [Nvidia Texture Tools](https://github.com/castano/nvidia-texture-tools) libraries. This wrapper combines functionality from both unmanaged libraries to provide a single, easy to use API surface to import, manipulate and export images. The general motivation is to process textures for graphics applications, so there is an emphasis on using the Nvidia Texture Tools library for compression and mipmap chain generation. 
@@ -21,9 +21,11 @@ The library is split between two parts, a low level and a high level. The intent
 
 ## Supported Platforms ##
 
-The library currently only supports Windows officially. It has a **Linux** and **Mac** implementation to load and communicate with the native library for those platforms, but you have to provide the native binary yourself.
+TeximpNet officially targets the **.NET Standard 1.3** and supplies binaries for **32/64 bit Windows** and **64 bit Linux (tested on ubuntu)**. The library is able to support **MacOS** but native binaries are not yet bundled with the official NuGet package. To use the library on your
+preferred platform, you may have to build and supply the native binaries yourself.
 
-The library is compiled using Visual Studio 2015 and at runtime has no other external dependencies other than the native libraries. However, there is a compile time dependency using [Mono.Cecil](https://github.com/jbevain/cecil/). If you compile without using the VS projects/MSBuild environment, the **only** special instruction is that you need to ensure that the interop generator patches the TeximpNet.dll in a post-build process, otherwise the library won't function correctly. This is because Mono.Cecil is used to inject IL into the assembly to make interoping with the native library more efficient.
+Additionally, the NuGet package has targets for **.NET Framework 4.x** and **.NET Framework 3.5** should you need them. It was compiled with Visual Studio 2017, but it has been compiled on Ubuntu using the DotNet CLI. There is one **build-time only** dependency, an IL Patcher also distributed as a cross-platform NuGet package. As long as you're
+able to build with Visual Studio or the DotNet CLI, the library *should* compile without issue on any platform.
 
 ## Licensing ##
 
@@ -36,5 +38,7 @@ Follow project updates and more on [Twitter](https://twitter.com/Tesla3D/).
 In addition, check out these other projects from the same author:
 
 [AssimpNet](https://bitbucket.org/Starnick/assimpnet) - A wrapper for the Open Asset Import Library, which is a sister library to this one.
+
+[MemoryInterop.ILPatcher](https://bitbucket.org/Starnick/memoryinterop.ilpatcher) - This is the ILPatcher that is required at build time, it uses Mono.Cecil to inject IL code to improve native interop. The ILPatcher is cross-platform, which enables building of TeximpNet on non-windows platforms.
 
 [Tesla Graphics Engine](https://bitbucket.org/Starnick/tesla3d) - A 3D rendering engine written in C# and the primary driver for developing TeximpNet.
