@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Nicholas Woodfield</Authors>
     <Company />
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <PackageLicenseUrl>http://opensource.org/licenses/mit-license.php</PackageLicenseUrl>
     <Copyright>Copyright © 2016-2018 Nicholas Woodfield</Copyright>
     <PackageIconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</PackageIconUrl>
@@ -26,13 +26,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="DDSContainer.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="..\ChangeLog.txt" Link="ChangeLog.txt" PackagePath="" />
-    <Content Include="..\License.txt" Link="License.txt" PackagePath="" />
-    <Content Include="..\Docs\TeximpNet Documentation %28February 2018%29.chm" Link="TeximpNet Documentation %28February 2018%29.chm" PackagePath="" />
+    <Content Include="..\ChangeLog.txt" Link="build\ChangeLog.txt" PackagePath="" />
+    <Content Include="..\License.txt" Link="build\License.txt" PackagePath="" />
+    <Content Include="..\Docs\TeximpNet Documentation %28February 2018%29.chm" Link="build\TeximpNet Documentation %28February 2018%29.chm" PackagePath="" />
     <Content Include="..\libs\FreeImage\win-x64\FreeImage64.dll" Link="build\native\win-x64\FreeImage64.dll" PackagePath="build\native\win-x64\" />
     <Content Include="..\libs\FreeImage\win-x86\FreeImage32.dll" Link="build\native\win-x86\FreeImage32.dll" PackagePath="build\native\win-x86\" />
     <Content Include="..\libs\FreeImage\linux-x64\libFreeImage64.so" Link="build\native\linux-x64\libFreeImage64.so" PackagePath="build\native\linux-x64\" />
