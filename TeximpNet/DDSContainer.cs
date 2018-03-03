@@ -11,26 +11,21 @@ namespace TeximpNet
         //The 4 characters "DDS "
         private const uint DDS_MAGIC = 0x20534444;
 
-        //Buffer to transfer to/from a stream
-        private byte[] m_transferBuffer = new byte[81920];
-
-        //Pin the transfer buffer once for duration of read/write
-        private GCHandle m_pinnedBuffer;
-
-
+        //Temp stream transfer buffer
+        private StreamTransferBuffer m_buffer;
 
         public static unsafe void Test(String filename)
         {
             using(FileStream fs = File.OpenRead(filename))
             {
                 DDSContainer container = new DDSContainer();
-                container.PinTransferBuffer();
-
-                DDSHeader header;
-                DDSHeader10? headerExt;
-                container.ReadHeader(fs, out header, out headerExt);
-
-                container.UnpinTransferBuffer();
+                using(container.m_buffer = new StreamTransferBuffer())
+                {
+                    DDSHeader header;
+                    DDSHeader10? headerExt;
+                    container.ReadHeader(fs, out header, out headerExt);
+                    char c = (char) 114;
+                }
             }
         }
 
@@ -61,22 +56,6 @@ namespace TeximpNet
             return magicWord == DDS_MAGIC;
         }
 
-        private void PinTransferBuffer()
-        {
-            m_pinnedBuffer = GCHandle.Alloc(m_transferBuffer, GCHandleType.Pinned);
-        }
-
-        private void UnpinTransferBuffer()
-        {
-            m_pinnedBuffer.Free();
-        }
-        
-        private void ReadFromStream<T>(Stream input, out T value) where T : struct
-        {
-            input.Read(m_transferBuffer, 0, MemoryHelper.SizeOf<T>());
-            MemoryHelper.Read<T>(m_pinnedBuffer.AddrOfPinnedObject(), out value);
-        }
-
         private bool ReadHeader(Stream input, out DDSHeader header, out DDSHeader10? headerExt)
         {
             headerExt = null;
@@ -92,7 +71,7 @@ namespace TeximpNet
             input.Position += sizeof(uint);
 
             //Read primary header
-            ReadFromStream<DDSHeader>(input, out header);
+            m_buffer.Read<DDSHeader>(input, out header);
 
             //Verify header
             if(header.Size != MemoryHelper.SizeOf<DDSHeader>() || header.PixelFormat.Size != MemoryHelper.SizeOf<DDSPixelFormat>())
@@ -107,8 +86,8 @@ namespace TeximpNet
                     return false;
 
                 DDSHeader10 header10;
-                ReadFromStream<DDSHeader10>(input, out header10);
-               
+                m_buffer.Read<DDSHeader10>(input, out header10);
+
                 headerExt = header10;
             }
 
@@ -127,7 +106,7 @@ namespace TeximpNet
         private unsafe struct DDSHeader
         {
             public uint Size;
-            public uint Flags;
+            public DDSHeaderFlags Flags;
             public uint Height;
             public uint Width;
             public uint PitchOrLinearSize;
@@ -135,8 +114,8 @@ namespace TeximpNet
             public uint MipMapCount;
             public fixed uint Reserved1[11];
             public DDSPixelFormat PixelFormat;
-            public uint Caps;
-            public uint Caps2;
+            public DDSHeaderCaps Caps;
+            public DDSHeaderCaps2 Caps2;
             public uint Caps3;
             public uint Caps4;
             public uint Reserved2;
@@ -147,16 +126,16 @@ namespace TeximpNet
         {
             public DXGIFormat Format;
             public D3D10ResourceDimension ResourceDimension;
-            public uint MiscFlag;
+            public DDSHeader10Flags MiscFlag;
             public uint ArraySize;
-            public uint MiscFlags2;
+            public DDSHeader10Flags2 MiscFlags2;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 4)]
         private struct DDSPixelFormat
         {
             public uint Size;
-            public uint Flags;
+            public DDSPixelFormatFlags Flags;
             public uint FourCC;
             public uint RGBBitCount;
             public uint RedBitMask;
@@ -172,6 +151,78 @@ namespace TeximpNet
             Texture1D = 2,
             Texture2D = 3,
             Texture3D = 4
+        }
+
+        [Flags]
+        private enum DDSHeaderFlags : uint
+        {
+            None = 0,
+            Caps = 0x1,
+            Height = 0x2,
+            Width = 0x4,
+            Pitch = 0x8,
+            PixelFormat = 0x1000,
+            MipMapCount = 0x20000,
+            LinearSize = 0x80000,
+            Depth = 0x800000
+        }
+
+        [Flags]
+        private enum DDSHeaderCaps : uint
+        {
+            None = 0,
+            Complex = 0x8,
+            Texture = 0x1000,
+            MipMap = 0x400000
+        }
+
+        [Flags]
+        private enum DDSHeaderCaps2 : uint
+        {
+            None = 0,
+            Cubemap = 0x200,
+            Cubemap_PositiveX = Cubemap | 0x400,
+            Cubemap_NegativeX = Cubemap | 0x800,
+            Cubemap_PositiveY = Cubemap | 0x1000,
+            Cubemap_NegativeY = Cubemap | 0x2000,
+            Cubemap_PositiveZ = Cubemap | 0x4000,
+            Cubemap_NegativeZ = Cubemap | 0x8000,
+            Cubemap_AllFaces = Cubemap_PositiveX | Cubemap_NegativeX | Cubemap_PositiveY | Cubemap_NegativeY | Cubemap_PositiveZ | Cubemap_NegativeZ,
+            Volume = 0x200000
+        }
+
+        [Flags]
+        private enum DDSHeader10Flags : uint
+        {
+            None = 0,
+            TextureCube = 0x4
+        }
+
+        [Flags]
+        private enum DDSHeader10Flags2 : uint
+        {
+            None = 0,
+            AlphaModeStraight = 0x1,
+            AlphaModePremultiplied = 0x2,
+            AlphaModeOpaque = 0x3,
+            AlphaModeCustom = 0x4
+        }
+
+        [Flags]
+        private enum DDSPixelFormatFlags : uint
+        {
+            None = 0,
+            AlphaPixels = 0x1,
+            Alpha = 0x2,
+            FourCC = 0x4,
+            RGB = 0x40,
+            RGBA = RGB | Alpha,
+            YUV = 0x200,
+            Luminance = 0x20000,
+            LuminanceAlpha = Luminance | Alpha,
+            Pal8 = 0x00000020,
+            Pal8Alpha = Pal8 | Alpha,
+            BumpDUDV = 0x00080000
         }
 
         private enum DXGIFormat : uint
