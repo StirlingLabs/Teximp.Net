@@ -43,7 +43,7 @@ namespace TeximpNet
         /// <returns>Pointer to pinned object's memory location.</returns>
         public static IntPtr PinObject(Object obj)
         {
-            lock (s_pinnedObjects)
+            lock(s_pinnedObjects)
             {
                 GCHandle handle;
                 if(!s_pinnedObjects.TryGetValue(obj, out handle))
@@ -62,7 +62,7 @@ namespace TeximpNet
         /// <param name="obj">Object to unpin.</param>
         public static void UnpinObject(Object obj)
         {
-            lock (s_pinnedObjects)
+            lock(s_pinnedObjects)
             {
                 GCHandle handle;
                 if(!s_pinnedObjects.TryGetValue(obj, out handle))
@@ -73,93 +73,50 @@ namespace TeximpNet
             }
         }
 
-        /// <summary>
-        /// Gets the number of mipmaps that should be in the chain where the first image has the specified width/height/depth.
-        /// </summary>
-        /// <param name="width">Width of the first image in the mipmap chain.</param>
-        /// <param name="height">Height of the first image in the mipmap chain.</param>
-        /// <param name="depth">Depth of the first image in the mipmap chain.</param>
-        /// <returns>Number of mipmaps that can be generated for the image.</returns>
-        public static int CountMipmaps(int width, int height, int depth)
-        {
-            int mipmap = 0;
 
-            while (width != 1 || height != 1 || depth != 1)
+        /// <summary>
+        /// Convienence method to dispose all items in the collection
+        /// </summary>
+        /// <typeparam name="T">IDisposable type</typeparam>
+        /// <param name="collection">Collection of disposables</param>
+        public static void DisposeCollection<T>(ICollection<T> collection) where T : IDisposable
+        {
+            if(collection == null)
+                return;
+
+            //Check if it's a list, so we can avoid having to call the enumerator
+            IList<T> list = collection as IList<T>;
+
+            if(list != null)
             {
-                width = Math.Max(1, width / 2);
-                height = Math.Max(1, height / 2);
-                depth = Math.Max(1, depth / 2);
-                mipmap++;
+                for(int i = 0; i < list.Count; i++)
+                {
+                    IDisposable disposable = list[i];
+                    if(disposable != null)
+                        disposable.Dispose();
+                }
             }
-
-            return mipmap + 1;
-        }
-
-        /// <summary>
-        /// Calculates the mipmap level dimension given the level and the first level's dimensions.
-        /// </summary>
-        /// <param name="mipLevel">Mip map level to calculate for.</param>
-        /// <param name="width">Initially the first level's width, holds the width of the mip level after function returns.</param>
-        /// <param name="height">Initially the first level's height, holds the height of the mip level after function returns.</param>
-        public static void CalculateMipmapLevelDimensions(int mipLevel, ref int width, ref int height)
-        {
-            width = Math.Max(1, width >> mipLevel);
-            height = Math.Max(1, height >> mipLevel);
-        }
-
-        /// <summary>
-        /// Calculates the mipmap level dimension given the level and the first level's dimensions.
-        /// </summary>
-        /// <param name="mipLevel">Mip map level to calculate for.</param>
-        /// <param name="width">Initially the first level's width, holds the width of the mip level after function returns.</param>
-        /// <param name="height">Initially the first level's height, holds the height of the mip level after function returns.</param>
-        /// <param name="depth">Initially the first level's depth, holds the depth of the mip level after function returns.</param>
-        public static void CalculateMipmapLevelDimensions(int mipLevel, ref int width, ref int height, ref int depth)
-        {
-            width = Math.Max(1, width >> mipLevel);
-            height = Math.Max(1, height >> mipLevel);
-            depth = Math.Max(1, depth >> mipLevel);
-        }
-
-        /// <summary>
-        /// Gets the previous power of two value.
-        /// </summary>
-        /// <param name="v">Previous value.</param>
-        /// <returns>Previous power of two.</returns>
-        public static int PreviousPowerOfTwo(int v)
-        {
-            return NextPowerOfTwo(v + 1) / 2;
-        }
-
-        /// <summary>
-        /// Gets the nearest power of two value.
-        /// </summary>
-        /// <param name="v">Starting value.</param>
-        /// <returns>Nearest power of two.</returns>
-        public static int NearestPowerOfTwo(int v)
-        {
-            int np2 = NextPowerOfTwo(v);
-            int pp2 = PreviousPowerOfTwo(v);
-
-            if (np2 - v <= v - pp2)
-                return np2;
             else
-                return pp2;
+            {
+                //Otherwise enumerate the collection
+                foreach(IDisposable disposable in collection)
+                {
+                    if(disposable != null)
+                        disposable.Dispose();
+                }
+            }
         }
 
         /// <summary>
-        /// Get the next power of two value.
+        /// Casts an underlying value type to an enum type, WITHOUT first casting the value to an Object. So this avoid boxing the value.
         /// </summary>
-        /// <param name="v">Starting value.</param>
-        /// <returns>Next power of two.</returns>
-        public static int NextPowerOfTwo(int v)
+        /// <typeparam name="V">Underlying value type.</typeparam>
+        /// <typeparam name="T">Enum type.</typeparam>
+        /// <param name="value">Value to cast.</param>
+        /// <returns>Enum value.</returns>
+        public static T CastToEnum<V, T>(V value) where V : struct, IComparable, IFormattable, IConvertible where T : struct, IComparable, IFormattable, IConvertible
         {
-            int p = 1;
-            while (v > p)
-            {
-                p += p;
-            }
-            return p;
+            return MemoryInterop.As<V, T>(ref value);
         }
 
         /// <summary>
@@ -227,28 +184,6 @@ namespace TeximpNet
             T temp = left;
             left = right;
             right = temp;
-        }
-
-        /// <summary>
-        /// Casts the pointer to a by-ref value of the specified type.
-        /// </summary>
-        /// <typeparam name="T">Type of data.</typeparam>
-        /// <param name="ptr">Pointer</param>
-        /// <returns>By-ref value.</returns>
-        public static ref T AsRef<T>(IntPtr ptr) where T : struct
-        {
-            return ref MemoryInterop.AsRef<T>(ptr);
-        }
-
-        /// <summary>
-        /// Casts the by-ref value of the specified type to a pointer. Note: This does not do any sort of pinning.
-        /// </summary>
-        /// <typeparam name="T">Type of data.</typeparam>
-        /// <param name="src">By-ref value.</param>
-        /// <returns>Pointer to the memory location.</returns>
-        public static IntPtr AsPointer<T>(ref T src) where T : struct
-        {
-            return MemoryInterop.AsPointerInline<T>(ref src);
         }
 
         /// <summary>
@@ -376,6 +311,63 @@ namespace TeximpNet
         }
 
         /// <summary>
+        /// Casts the by-ref value into a pointer.
+        /// </summary>
+        /// <typeparam name="T">Struct type.</typeparam>
+        /// <param name="src">By-ref value.</param>
+        /// <returns>Pointer to the value.</returns>
+        public static unsafe IntPtr AsPointer<T>(ref T src) where T : struct
+        {
+            return MemoryInterop.AsPointerInline<T>(ref src);
+        }
+
+        /// <summary>
+        /// Casts the readonly by-ref value into a pointer.
+        /// </summary>
+        /// <typeparam name="T">Struct type.</typeparam>
+        /// <param name="src">By-ref value.</param>
+        /// <returns>Pointer to the value.</returns>
+        public static unsafe IntPtr AsPointerReadonly<T>(in T src) where T : struct
+        {
+            return MemoryInterop.AsPointerReadonlyInline<T>(in src);
+        }
+
+        /// <summary>
+        /// Casts the pointer into a by-ref value of the specified type.
+        /// </summary>
+        /// <typeparam name="T">Struct type.</typeparam>
+        /// <param name="pSrc">Memory location.</param>
+        /// <returns>By-ref value.</returns>
+        public static unsafe ref T AsRef<T>(IntPtr pSrc) where T : struct
+        {
+            return ref MemoryInterop.AsRef<T>(pSrc);
+        }
+
+        /// <summary>
+        /// Casts one by-ref type to another, unsafely.
+        /// </summary>
+        /// <typeparam name="TFrom">From struct type</typeparam>
+        /// <typeparam name="TTo">To struct type</typeparam>
+        /// <param name="src">Source by-ref value.</param>
+        /// <returns>Reference as the from type.</returns>
+        public static ref TTo As<TFrom, TTo>(ref TFrom src) where TFrom : struct where TTo : struct
+        {
+            return ref MemoryInterop.As<TFrom, TTo>(ref src);
+        }
+
+        /// <summary>
+        /// Casts one readonly by-ref type to another, unsafely.
+        /// </summary>
+        /// <typeparam name="TFrom">From struct type</typeparam>
+        /// <typeparam name="TTo">To struct type</typeparam>
+        /// <param name="src">Source by-ref value.</param>
+        /// <returns>Reference as the from type.</returns>
+        public static ref readonly TTo AsReadonly<TFrom, TTo>(in TFrom src) where TFrom : struct where TTo : struct
+        {
+            return ref MemoryInterop.AsReadonly<TFrom, TTo>(in src);
+        }
+
+        /// <summary>
         /// Computes the size of the struct array.
         /// </summary>
         /// <typeparam name="T">Struct type</typeparam>
@@ -427,6 +419,12 @@ namespace TeximpNet
             if(otherColl != null)
                 return otherColl.Count;
 
+#if NETSTANDARD1_3
+            IReadOnlyCollection<T> roColl = source as IReadOnlyCollection<T>;
+            if(roColl != null)
+                return roColl.Count;
+#endif
+            
             int count = 0;
             using(IEnumerator<T> enumerator = source.GetEnumerator())
             {
@@ -554,6 +552,17 @@ namespace TeximpNet
         }
 
         /// <summary>
+        /// Reads a single element from the memory location.
+        /// </summary>
+        /// <typeparam name="T">Struct type</typeparam>
+        /// <param name="pSrc">Pointer to memory location</param>
+        /// <param name="value">The read value.</param>
+        public static unsafe void Read<T>(IntPtr pSrc, out T value) where T : struct
+        {
+            value = MemoryInterop.ReadInline<T>((void*) pSrc);
+        }
+
+        /// <summary>
         /// Writes data from the array to the memory location.
         /// </summary>
         /// <typeparam name="T">Struct type</typeparam>
@@ -572,153 +581,9 @@ namespace TeximpNet
         /// <typeparam name="T">Struct type</typeparam>
         /// <param name="pDest">Pointer to memory location</param>
         /// <param name="data">The value to write</param>
-        public static unsafe void Write<T>(IntPtr pDest, ref T data) where T : struct
+        public static unsafe void Write<T>(IntPtr pDest, in T data) where T : struct
         {
-            MemoryInterop.WriteInline<T>((void*) pDest, ref data);
-        }
-
-        /// <summary>
-        /// Copies 32-bit BGRA color data from the src point (with specified row/slice pitch -- it may be padded!) into a NON-PADDED 32-bit BGRA color image. This
-        /// doesn't validate any data, so use at your own risk.
-        /// </summary>
-        /// <param name="dstBgraPtr">Destination BGRA pointer</param>
-        /// <param name="srcBgraPtr">Source BGRA pointer</param>
-        /// <param name="width">Width of the image</param>
-        /// <param name="height">Height of the image</param>
-        /// <param name="depth">Depth of the image</param>
-        /// <param name="rowPitch">Pitch of each scanline of source image.</param>
-        /// <param name="slicePitch">Slice of each depth slice of source image.</param>
-        public static unsafe void CopyBGRAImageData(IntPtr dstBgraPtr, IntPtr srcBgraPtr, int width, int height, int depth, int rowPitch, int slicePitch)
-        {
-            int formatSize = 4; //4-byte BGRA texel
-            int rowStride = width * formatSize;
-            int depthStride = width * height * formatSize;
-
-            IntPtr dstPtr = dstBgraPtr;
-            IntPtr srcPtr = srcBgraPtr;
-
-            //Iterate for each depth
-            for (int slice = 0; slice < depth; slice++)
-            {
-                //Start with a pointer that points to the start of the slice
-                IntPtr sPtr = srcPtr;
-
-                //And iterate + copy each line per the height of the image
-                for (int row = 0; row < height; row++)
-                {
-                    MemoryHelper.CopyMemory(dstPtr, sPtr, rowStride);
-
-                    //Advance the temporary slice pointer and the source pointer
-                    sPtr = MemoryHelper.AddIntPtr(sPtr, rowPitch);
-                    dstPtr = MemoryHelper.AddIntPtr(dstPtr, rowStride);
-                }
-
-                //Advance the src pointer by the slice pitch to get to the next image
-                srcPtr = MemoryHelper.AddIntPtr(srcPtr, slicePitch);
-            }
-        }
-
-        /// <summary>
-        /// Copies 32-bit RGBA color data from the src point (with specified row/slice pitch -- it may be padded!) into a NON-PADDED 32-bit BGRA color image. This
-        /// doesn't validate any data, so use at your own risk.
-        /// </summary>
-        /// <param name="dstBgraPtr">Destination BGRA pointer.</param>
-        /// <param name="srcRgbaPtr">Source RGBA pointer.</param>
-        /// <param name="width">Width of the image</param>
-        /// <param name="height">Height of the image</param>
-        /// <param name="depth">Depth of the image</param>
-        /// <param name="rowPitch">Pitch of each scanline of source image.</param>
-        /// <param name="slicePitch">Slice of each depth slice of source image.</param>
-        public static unsafe void CopyRGBAImageData(IntPtr dstBgraPtr, IntPtr srcRgbaPtr, int width, int height, int depth, int rowPitch, int slicePitch)
-        {
-            int formatSize = 4; //4-byte BGRA texel
-            int rowStride = width * formatSize;
-            int depthStride = width * height * formatSize;
-
-            IntPtr dstPtr = dstBgraPtr;
-            IntPtr srcPtr = srcRgbaPtr;
-
-            //Iterate for each depth
-            for (int slice = 0; slice < depth; slice++)
-            {
-                //Start with a pointer that points to the start of the slice
-                IntPtr sPtr = srcPtr;
-
-                //And iterate + copy each line per the height of the image
-                for (int row = 0; row < height; row++)
-                {
-                    CopyLineToBGRA(sPtr, dstPtr, width);
-
-                    //Advance the temporary slice pointer and the source pointer
-                    sPtr = MemoryHelper.AddIntPtr(sPtr, rowPitch);
-                    dstPtr = MemoryHelper.AddIntPtr(dstPtr, rowStride);
-                }
-
-                //Advance the src pointer by the slice pitch to get to the next image
-                srcPtr = MemoryHelper.AddIntPtr(srcPtr, slicePitch);
-            }
-        }
-
-        /// <summary>
-        /// Copies texel by texel in the scanline, swapping R and B components along the way.
-        /// </summary>
-        /// <param name="rgbaLine">Scanline of RGBA texels, the source data.</param>
-        /// <param name="bgraLine">Scanline of BGRA texels, the destination data.</param>
-        /// <param name="count">Number of texels to copy.</param>
-        public static unsafe void CopyLineToBGRA(IntPtr rgbaLine, IntPtr bgraLine, int count)
-        {
-            byte* rgbaPtr = (byte*)rgbaLine.ToPointer();
-            byte* bgraPtr = (byte*)bgraLine.ToPointer();
-
-            for(int i = 0, byteIndex = 0; i < count; i++, byteIndex += 4)
-            {
-                int index0 = byteIndex;
-                int index1 = byteIndex + 1;
-                int index2 = byteIndex + 2;
-                int index3 = byteIndex + 3;
-
-                //RGBA -> BGRA
-                byte r = rgbaPtr[index0];
-                byte g = rgbaPtr[index1];
-                byte b = rgbaPtr[index2];
-                byte a = rgbaPtr[index3];
-
-                bgraPtr[index0] = b;
-                bgraPtr[index1] = g;
-                bgraPtr[index2] = r;
-                bgraPtr[index3] = a;
-            }
-        }
-
-        /// <summary>
-        /// Copies texel by texel in the scanline, swapping B and R components along the way.
-        /// </summary>
-        /// <param name="bgraLine">Scanline of BGRA texels, the source data.</param>
-        /// <param name="rgbaLine">Scanline of RGBA texels, the destination data.</param>
-        /// <param name="count">Number of texels to copy.</param>
-        public static unsafe void CopyLineToRGBA(IntPtr bgraLine, IntPtr rgbaLine, int count)
-        {
-            byte* rgbaPtr = (byte*)rgbaLine.ToPointer();
-            byte* bgraPtr = (byte*)bgraLine.ToPointer();
-
-            for (int i = 0, byteIndex = 0; i < count; i++, byteIndex += 4)
-            {
-                int index0 = byteIndex;
-                int index1 = byteIndex + 1;
-                int index2 = byteIndex + 2;
-                int index3 = byteIndex + 3;
-
-                //BGRA -> RGBA
-                byte b = bgraPtr[index0];
-                byte g = bgraPtr[index1];
-                byte r = bgraPtr[index2];
-                byte a = bgraPtr[index3];
-
-                rgbaPtr[index0] = r;
-                rgbaPtr[index1] = g;
-                rgbaPtr[index2] = b;
-                rgbaPtr[index3] = a;
-            }
+            MemoryInterop.WriteInline<T>((void*) pDest, in data);
         }
     }
 }

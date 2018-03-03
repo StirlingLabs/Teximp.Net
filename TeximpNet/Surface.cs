@@ -468,12 +468,12 @@ namespace TeximpNet
                     if(isBGRA)
                     {
                         //Convert to RGBA
-                        MemoryHelper.CopyBGRAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
+                        ImageHelper.CopyBGRAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
                     }
                     else
                     {
                         //Convert to BGRA
-                        MemoryHelper.CopyRGBAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
+                        ImageHelper.CopyRGBAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
                     }
 
                     IntPtr surfacePtr = FreeImageLibrary.Instance.ConvertFromRawBitsEx(true, tempData, ImageType.Bitmap, width, height, width * 4, 32, colorOrder.RedMask, colorOrder.GreenIndex, colorOrder.BlueMask, isTopDown);
@@ -824,7 +824,7 @@ namespace TeximpNet
 
             int width = Width;
             int height = Height;
-            int mipCount = MemoryHelper.CountMipmaps(width, height, 1);
+            int mipCount = ImageHelper.CountMipmaps(width, height, 1);
 
             //If max level explicitly set, get the minimum since we can't go beyond the # of mips based on width/height
             if (maxLevel > 0)
@@ -834,7 +834,7 @@ namespace TeximpNet
             {
                 int mipWidth = width;
                 int mipHeight = height;
-                MemoryHelper.CalculateMipmapLevelDimensions(i, ref mipWidth, ref mipHeight);
+                ImageHelper.CalculateMipmapLevelDimensions(i, ref mipWidth, ref mipHeight);
 
                 IntPtr mipPtr = FreeImageLibrary.Instance.Rescale(m_imagePtr, mipWidth, mipHeight, filter);
                 if(mipPtr != IntPtr.Zero)

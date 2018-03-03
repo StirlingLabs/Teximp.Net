@@ -377,7 +377,7 @@ namespace TeximpNet.Unmanaged
                 default64BitName = DllPrefix + Path.ChangeExtension(default64BitName, DllExtension);
 
                 //Resolve paths, find TeximpNet.dll. Default path is in the same directory
-                String managedAssemblyPath = Helper.GetAppBaseDirectory();
+                String managedAssemblyPath = PlatformHelper.GetAppBaseDirectory();
 
                 m_default32Path = Path.Combine(managedAssemblyPath, default32BitName);
                 m_default64Path = Path.Combine(managedAssemblyPath, default64BitName);
@@ -462,7 +462,7 @@ namespace TeximpNet.Unmanaged
                     Delegate function;
                     if (!m_nameToUnmanagedFunction.TryGetValue(funcName, out function))
                     {
-                        function = Helper.GetDelegateForFunctionPointer(procAddr, funcType);
+                        function = PlatformHelper.GetDelegateForFunctionPointer(procAddr, funcType);
                         m_nameToUnmanagedFunction.Add(funcName, function);
                     }
                 }
@@ -470,7 +470,7 @@ namespace TeximpNet.Unmanaged
 
             private String GetUnmanagedName(Type funcType)
             {
-                object[] attributes = Helper.GetCustomAttributes(funcType, typeof(UnmanagedFunctionNameAttribute), false);
+                object[] attributes = PlatformHelper.GetCustomAttributes(funcType, typeof(UnmanagedFunctionNameAttribute), false);
                 foreach (object attr in attributes)
                 {
                     if (attr is UnmanagedFunctionNameAttribute)

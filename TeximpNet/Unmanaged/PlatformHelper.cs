@@ -26,7 +26,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
-namespace TeximpNet
+namespace TeximpNet.Unmanaged
 {
 #if !NETSTANDARD1_3
     internal enum OSPlatform
@@ -67,7 +67,7 @@ namespace TeximpNet
 #endif
 
     //Helper class for making it easier to access certain reflection methods on types between .Net framework and .Net standard (pre-netstandard 2.0)
-    internal class Helper
+    internal class PlatformHelper
     {
         public static String GetAppBaseDirectory()
         {

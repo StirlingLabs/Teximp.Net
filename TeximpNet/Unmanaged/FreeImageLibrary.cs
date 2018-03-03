@@ -98,7 +98,7 @@ namespace TeximpNet.Unmanaged
 
         private static FreeImageLibrary CreateInstance()
         {
-            return new FreeImageLibrary(Default32BitName, Default64BitName, Helper.GetNestedTypes(typeof(Functions)));
+            return new FreeImageLibrary(Default32BitName, Default64BitName, PlatformHelper.GetNestedTypes(typeof(Functions)));
         }
 
         /// <summary>
@@ -1715,10 +1715,10 @@ namespace TeximpNet.Unmanaged
                 m_seekProc = (isLong64Bits) ? (Delegate) new FreeImageIO_SeekProc64(SeekProc64) : (Delegate) new FreeImageIO_SeekProc32(SeekProc32);
                 m_tellProc = (isLong64Bits) ? (Delegate) new FreeImageIO_TellProc64(TellProc64) : (Delegate) new FreeImageIO_TellProc32(TellProc32);
 
-                m_imageIO.ReadProc = Helper.GetFunctionPointerForDelegate(m_readProc);
-                m_imageIO.WriteProc = Helper.GetFunctionPointerForDelegate(m_writeProc);
-                m_imageIO.SeekProc = Helper.GetFunctionPointerForDelegate(m_seekProc);
-                m_imageIO.TellProc = Helper.GetFunctionPointerForDelegate(m_tellProc);
+                m_imageIO.ReadProc = PlatformHelper.GetFunctionPointerForDelegate(m_readProc);
+                m_imageIO.WriteProc = PlatformHelper.GetFunctionPointerForDelegate(m_writeProc);
+                m_imageIO.SeekProc = PlatformHelper.GetFunctionPointerForDelegate(m_seekProc);
+                m_imageIO.TellProc = PlatformHelper.GetFunctionPointerForDelegate(m_tellProc);
             }
 
             private unsafe uint ReadProc(IntPtr buffer, uint size, uint count, IntPtr ioHandle)

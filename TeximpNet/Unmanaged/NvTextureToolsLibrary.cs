@@ -95,7 +95,7 @@ namespace TeximpNet.Unmanaged
 
         private static NvTextureToolsLibrary CreateInstance()
         {
-            return new NvTextureToolsLibrary(Default32BitName, Default64BitName, Helper.GetNestedTypes(typeof(Functions)));
+            return new NvTextureToolsLibrary(Default32BitName, Default64BitName, PlatformHelper.GetNestedTypes(typeof(Functions)));
         }
 
         #region Input options

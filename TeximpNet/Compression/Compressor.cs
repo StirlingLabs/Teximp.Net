@@ -701,7 +701,7 @@ namespace TeximpNet.Compression
                 }
 
                 if(m_generateMipmaps && m_maxLevel == -1)
-                    m_mipCount = MemoryHelper.CountMipmaps(width, height, depth);
+                    m_mipCount = ImageHelper.CountMipmaps(width, height, depth);
 
                 NvTextureToolsLibrary.Instance.SetInputOptionsTextureLayout(m_inputOptionsPtr, type, width, height, depth);
             }
@@ -1016,7 +1016,7 @@ namespace TeximpNet.Compression
                 m_maxLevel = maxLevel;
 
                 if (maxLevel == -1)
-                    m_mipCount = MemoryHelper.CountMipmaps(m_width, m_height, m_depth);
+                    m_mipCount = ImageHelper.CountMipmaps(m_width, m_height, m_depth);
                 else
                     m_mipCount = maxLevel;
 
@@ -1098,7 +1098,7 @@ namespace TeximpNet.Compression
 
                 //Input to compressor will be a simple array of the texels, no padding (note: at least from what I can tell from NVTT docs and sourcecode!)
                 IntPtr dstBgraPtr = MemoryHelper.AllocateMemory(width * height * depth * formatSize);
-                MemoryHelper.CopyBGRAImageData(dstBgraPtr, srcBgraPtr, width, height, depth, rowPitch, slicePitch);
+                ImageHelper.CopyBGRAImageData(dstBgraPtr, srcBgraPtr, width, height, depth, rowPitch, slicePitch);
 
                 return dstBgraPtr;
             }
@@ -1109,7 +1109,7 @@ namespace TeximpNet.Compression
 
                 //Input to compressor will be a simple array of the texels, no padding (note: at least from what I can tell from NVTT docs and sourcecode!)
                 IntPtr dstBgraPtr = MemoryHelper.AllocateMemory(width * height * depth * formatSize);
-                MemoryHelper.CopyRGBAImageData(dstBgraPtr, srcRgbaPtr, width, height, depth, rowPitch, slicePitch);
+                ImageHelper.CopyRGBAImageData(dstBgraPtr, srcRgbaPtr, width, height, depth, rowPitch, slicePitch);
 
                 return dstBgraPtr;
             }
