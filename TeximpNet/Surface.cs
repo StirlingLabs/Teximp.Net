@@ -337,6 +337,8 @@ namespace TeximpNet
         public Surface(int bpp, int width, int height, uint redMask, uint greenMask, uint blueMask)
         {
             m_imagePtr = FreeImageLibrary.Instance.Allocate(width, height, bpp, redMask, greenMask, blueMask);
+
+            AddGCMemoryPressure();
         }
 
         /// <summary>
@@ -361,6 +363,8 @@ namespace TeximpNet
         public Surface(ImageType imageType, int bpp, int width, int height, uint redMask, uint greenMask, uint blueMask)
         {
             m_imagePtr = FreeImageLibrary.Instance.AllocateT(imageType, width, height, bpp, redMask, greenMask, blueMask);
+
+            AddGCMemoryPressure();
         }
 
         /// <summary>
@@ -370,6 +374,8 @@ namespace TeximpNet
         public Surface(IntPtr imagePtr)
         {
             m_imagePtr = imagePtr;
+
+            AddGCMemoryPressure();
         }
 
         /// <summary>
@@ -860,12 +866,26 @@ namespace TeximpNet
             {
                 if(m_imagePtr != IntPtr.Zero)
                 {
+                    RemoveGCMemoryPressure();
+
                     FreeImageLibrary.Instance.Unload(m_imagePtr);
                     m_imagePtr = IntPtr.Zero;
                 }
 
                 m_isDisposed = true;
             }
+        }
+
+        private void AddGCMemoryPressure()
+        {
+            int estimatedSize = Pitch * Height;
+            GC.AddMemoryPressure(estimatedSize);
+        }
+
+        private void RemoveGCMemoryPressure()
+        {
+            int estimatedSize = Pitch * Height;
+            GC.RemoveMemoryPressure(estimatedSize);
         }
     }
 }

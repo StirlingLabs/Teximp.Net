@@ -137,7 +137,7 @@ namespace TeximpNet.Compression
         }
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="CompressedImageData"/> class.
+        /// Constructs a new instance of the <see cref="CompressedImageData"/> class. This initializes a 2D texture.
         /// </summary>
         /// <param name="width">Width of the image.</param>
         /// <param name="height">Height of the image.</param>
@@ -150,7 +150,7 @@ namespace TeximpNet.Compression
         }
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="CompressedImageData"/> class.
+        /// Constructs a new instance of the <see cref="CompressedImageData"/> class. This initializes a cubemap face.
         /// </summary>
         /// <param name="width">Width of the image.</param>
         /// <param name="height">Height of the image.</param>
@@ -165,7 +165,7 @@ namespace TeximpNet.Compression
         }
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="CompressedImageData"/> class.
+        /// Constructs a new instance of the <see cref="CompressedImageData"/> class. This initializes a 3D texture.
         /// </summary>
         /// <param name="width">Width of the image.</param>
         /// <param name="height">Height of the image.</param>
@@ -206,6 +206,7 @@ namespace TeximpNet.Compression
 
             m_sizeInBytes = CalculateSizeInBytes();
             m_data = MemoryHelper.AllocateMemory(m_sizeInBytes);
+            GC.AddMemoryPressure(m_sizeInBytes);
         }
 
         /// <summary>
@@ -220,6 +221,8 @@ namespace TeximpNet.Compression
                 {
                     MemoryHelper.FreeMemory(m_data);
                     m_data = IntPtr.Zero;
+
+                    GC.RemoveMemoryPressure(m_sizeInBytes);
                 }
 
                 m_isDisposed = true;
