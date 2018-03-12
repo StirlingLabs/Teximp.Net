@@ -40,7 +40,7 @@ namespace TeximpNet
         {
             int mipmap = 0;
 
-            while(width != 1 || height != 1 || depth != 1)
+            while (width != 1 || height != 1 || depth != 1)
             {
                 width = Math.Max(1, width / 2);
                 height = Math.Max(1, height / 2);
@@ -97,7 +97,7 @@ namespace TeximpNet
             int np2 = NextPowerOfTwo(v);
             int pp2 = PreviousPowerOfTwo(v);
 
-            if(np2 - v <= v - pp2)
+            if (np2 - v <= v - pp2)
                 return np2;
             else
                 return pp2;
@@ -111,7 +111,7 @@ namespace TeximpNet
         public static int NextPowerOfTwo(int v)
         {
             int p = 1;
-            while(v > p)
+            while (v > p)
             {
                 p += p;
             }
@@ -151,7 +151,7 @@ namespace TeximpNet
             widthCount = width;
             heightCount = height;
 
-            if(DDS.FormatConverter.IsCompressed(format))
+            if (DDS.FormatConverter.IsCompressed(format))
             {
                 int blockSize = DDS.FormatConverter.GetCompressedBlockSize(format);
 
@@ -161,9 +161,9 @@ namespace TeximpNet
                 rowPitch = widthCount * blockSize;
                 slicePitch = rowPitch * heightCount;
 
-                bytesPerPixel = blockSize / 8;
+                bytesPerPixel = blockSize;
             }
-            else if(DDS.FormatConverter.IsPacked(format))
+            else if (DDS.FormatConverter.IsPacked(format))
             {
                 rowPitch = ((width + 1) >> 1) * 4;
                 slicePitch = rowPitch * height;
@@ -176,7 +176,7 @@ namespace TeximpNet
                 int bitsPerPixel = DDS.FormatConverter.GetBitsPerPixel(format);
                 bytesPerPixel = Math.Max(1, bitsPerPixel / 8);
 
-                if(legacyDword)
+                if (legacyDword)
                 {
                     //Allow for old DDS files that based pitch on certain assumptions
                     rowPitch = ((width * bitsPerPixel + 31) / 32) * sizeof(int);
@@ -191,146 +191,144 @@ namespace TeximpNet
         }
 
         /// <summary>
-        /// Copies 32-bit BGRA color data from the src point (with specified row/slice pitch -- it may be padded!) into a NON-PADDED 32-bit BGRA color image. This
-        /// doesn't validate any data, so use at your own risk.
+        /// Copies image data from one memory location to another. This doesn't validate any data, so use at your own risk.
         /// </summary>
-        /// <param name="dstBgraPtr">Destination BGRA pointer</param>
-        /// <param name="srcBgraPtr">Source BGRA pointer</param>
-        /// <param name="width">Width of the image</param>
-        /// <param name="height">Height of the image</param>
-        /// <param name="depth">Depth of the image</param>
-        /// <param name="rowPitch">Pitch of each scanline of source image.</param>
-        /// <param name="slicePitch">Slice of each depth slice of source image.</param>
-        public static unsafe void CopyBGRAImageData(IntPtr dstBgraPtr, IntPtr srcBgraPtr, int width, int height, int depth, int rowPitch, int slicePitch)
+        /// <param name="dstPtr">Destination memory location.</param>
+        /// <param name="dstRowPitch">Destination scanline stride, the image data + padding.</param>
+        /// <param name="dstSlicePitch">Destination slice stride, the entire image + padding, if a 3D image that is comprised of multiple slices.</param>
+        /// <param name="srcPtr">Source memory location.</param>
+        /// <param name="srcRowPitch">Source scanline stride, the image data + padding.</param>
+        /// <param name="srcSlicePitch">Source slice stride, the entire image + padding, if a 3D image that is comprised of multiple slices.</param>
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="height">Height of the image, in texels.</param>
+        /// <param name="depth">Depth of the image, in texels.</param>
+        public static unsafe void CopyImageData(IntPtr dstPtr, int dstRowPitch, int dstSlicePitch, IntPtr srcPtr, int srcRowPitch, int srcSlicePitch, int width, int height, int depth)
         {
-            int formatSize = 4; //4-byte BGRA texel
-            int rowStride = width * formatSize;
-            int depthStride = width * height * formatSize;
-
-            IntPtr dstPtr = dstBgraPtr;
-            IntPtr srcPtr = srcBgraPtr;
+            //Amount to copy per scanline
+            int strideToCopy = Math.Min(dstRowPitch, srcRowPitch);
 
             //Iterate for each depth
-            for(int slice = 0; slice < depth; slice++)
+            for (int slice = 0; slice < depth; slice++)
             {
                 //Start with a pointer that points to the start of the slice
                 IntPtr sPtr = srcPtr;
+                IntPtr dPtr = dstPtr;
 
                 //And iterate + copy each line per the height of the image
-                for(int row = 0; row < height; row++)
+                for (int row = 0; row < height; row++)
                 {
-                    MemoryHelper.CopyMemory(dstPtr, sPtr, rowStride);
+                    MemoryHelper.CopyMemory(dstPtr, sPtr, strideToCopy);
 
-                    //Advance the temporary slice pointer and the source pointer
-                    sPtr = MemoryHelper.AddIntPtr(sPtr, rowPitch);
-                    dstPtr = MemoryHelper.AddIntPtr(dstPtr, rowStride);
+                    //Advance the temporary pointers to the next scanline
+                    sPtr = MemoryHelper.AddIntPtr(sPtr, srcRowPitch);
+                    dPtr = MemoryHelper.AddIntPtr(dPtr, dstRowPitch);
                 }
 
-                //Advance the src pointer by the slice pitch to get to the next image
-                srcPtr = MemoryHelper.AddIntPtr(srcPtr, slicePitch);
+                //Advance the pointers by their slice pitches to get to the next image
+                srcPtr = MemoryHelper.AddIntPtr(srcPtr, srcSlicePitch);
+                dstPtr = MemoryHelper.AddIntPtr(dstPtr, dstSlicePitch);
             }
         }
 
         /// <summary>
-        /// Copies 32-bit RGBA color data from the src point (with specified row/slice pitch -- it may be padded!) into a NON-PADDED 32-bit BGRA color image. This
-        /// doesn't validate any data, so use at your own risk.
+        /// Copies 32-bit RGBA/BGRA image data from one memory location to another. Optionally the data's first and third components can be swizzled to convert 
+        /// RGBA->BGRA or BGRA->RGBA data. This doesn't validate any data, so use at your own risk.
         /// </summary>
-        /// <param name="dstBgraPtr">Destination BGRA pointer.</param>
-        /// <param name="srcRgbaPtr">Source RGBA pointer.</param>
-        /// <param name="width">Width of the image</param>
-        /// <param name="height">Height of the image</param>
-        /// <param name="depth">Depth of the image</param>
-        /// <param name="rowPitch">Pitch of each scanline of source image.</param>
-        /// <param name="slicePitch">Slice of each depth slice of source image.</param>
-        public static unsafe void CopyRGBAImageData(IntPtr dstBgraPtr, IntPtr srcRgbaPtr, int width, int height, int depth, int rowPitch, int slicePitch)
+        /// <param name="dstPtr">Destination memory location.</param>
+        /// <param name="dstRowPitch">Destination scanline stride, the image data + padding.</param>
+        /// <param name="dstSlicePitch">Destination slice stride, the entire image + padding, if a 3D image that is comprised of multiple slices.</param>
+        /// <param name="srcPtr">Source memory location.</param>
+        /// <param name="srcRowPitch">Source scanline stride, the image data + padding.</param>
+        /// <param name="srcSlicePitch">Source slice stride, the entire image + padding, if a 3D image that is comprised of multiple slices.</param>
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="height">Height of the image, in texels.</param>
+        /// <param name="depth">Depth of the image, in texels.</param>
+        /// <param name="swizzle">Optionally swizzle first and third components.</param>
+        public static unsafe void CopyColorImageData(IntPtr dstPtr, int dstRowPitch, int dstSlicePitch, IntPtr srcPtr, int srcRowPitch, int srcSlicePitch, int width, int height, int depth, bool swizzle = false)
         {
-            int formatSize = 4; //4-byte BGRA texel
-            int rowStride = width * formatSize;
-            int depthStride = width * height * formatSize;
-
-            IntPtr dstPtr = dstBgraPtr;
-            IntPtr srcPtr = srcRgbaPtr;
+            //Amount to copy per scanline
+            int strideToCopy = Math.Min(dstRowPitch, srcRowPitch);
 
             //Iterate for each depth
-            for(int slice = 0; slice < depth; slice++)
+            for (int slice = 0; slice < depth; slice++)
             {
                 //Start with a pointer that points to the start of the slice
                 IntPtr sPtr = srcPtr;
+                IntPtr dPtr = dstPtr;
 
                 //And iterate + copy each line per the height of the image
-                for(int row = 0; row < height; row++)
+                for (int row = 0; row < height; row++)
                 {
-                    CopyLineToBGRA(sPtr, dstPtr, width);
+                    CopyRGBALine(dPtr, sPtr, width, swizzle);
 
-                    //Advance the temporary slice pointer and the source pointer
-                    sPtr = MemoryHelper.AddIntPtr(sPtr, rowPitch);
-                    dstPtr = MemoryHelper.AddIntPtr(dstPtr, rowStride);
+                    //Advance the temporary pointers to the next scanline
+                    sPtr = MemoryHelper.AddIntPtr(sPtr, srcRowPitch);
+                    dPtr = MemoryHelper.AddIntPtr(dPtr, dstRowPitch);
                 }
 
-                //Advance the src pointer by the slice pitch to get to the next image
-                srcPtr = MemoryHelper.AddIntPtr(srcPtr, slicePitch);
+                //Advance the pointers by their slice pitches to get to the next image
+                srcPtr = MemoryHelper.AddIntPtr(srcPtr, srcSlicePitch);
+                dstPtr = MemoryHelper.AddIntPtr(dstPtr, dstSlicePitch);
             }
         }
 
         /// <summary>
-        /// Copies texel by texel in the scanline, swapping R and B components along the way.
+        /// Copies 32-bit RGBA/BGRA color data from the src point (with specified row/slice pitch -- it may be padded!) into a NON-PADDED 32-bit RGBA/BGRA color image. Optionally the
+        /// data's first and third components can be swizzled to convert RGBA->BGRA or BGRA->RGBA data. This doesn't validate any data, so use at your own risk.
         /// </summary>
-        /// <param name="rgbaLine">Scanline of RGBA texels, the source data.</param>
-        /// <param name="bgraLine">Scanline of BGRA texels, the destination data.</param>
-        /// <param name="count">Number of texels to copy.</param>
-        public static unsafe void CopyLineToBGRA(IntPtr rgbaLine, IntPtr bgraLine, int count)
+        /// <param name="dstPtr">Destination memory location.</param>
+        /// <param name="srcPtr">Source memory location.</param>
+        /// <param name="srcRowPitch">Source scanline stride, the image data + padding.</param>
+        /// <param name="srcSlicePitch">Source slice stride, the entire image + padding, if a 3D image that is comprised of multiple slices.</param>
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="height">Height of the image, in texels.</param>
+        /// <param name="depth">Depth of the image, in texels.</param>
+        /// <param name="swizzle">Optionally swizzle first and third components.</param>
+        public static unsafe void CopyColorImageData(IntPtr dstPtr, IntPtr srcPtr, int srcRowPitch, int srcSlicePitch, int width, int height, int depth, bool swizzle = false)
         {
-            byte* rgbaPtr = (byte*) rgbaLine.ToPointer();
-            byte* bgraPtr = (byte*) bgraLine.ToPointer();
+            int formatSize = 4; //4-byte RGBA texel
+            int dstRowPitch = formatSize * width;
+            int dstSlicePitch = dstRowPitch * height;
 
-            for(int i = 0, byteIndex = 0; i < count; i++, byteIndex += 4)
+            CopyColorImageData(dstPtr, dstRowPitch, dstSlicePitch, srcPtr, srcRowPitch, srcSlicePitch, width, height, depth, swizzle);
+        }
+
+        /// <summary>
+        /// Copies a 32-bit color scanline from one memory location to another. Optionally can swizzle the first/third component
+        /// of every texel as its copied.
+        /// </summary>
+        /// <param name="dstPtr">Destination memory location.</param>
+        /// <param name="srcPtr">Source memory location.</param>
+        /// <param name="width">Number of texels in the scanline.</param>
+        /// <param name="swizzle">Optionally swizzle first and third components.</param>
+        public static unsafe void CopyRGBALine(IntPtr dstPtr, IntPtr srcPtr, int width, bool swizzle = false)
+        {
+            if (!swizzle)
+            {
+                MemoryHelper.CopyMemory(dstPtr, srcPtr, width * 4);
+                return;
+            }
+
+            byte* dPtr = (byte*) dstPtr.ToPointer();
+            byte* sPtr = (byte*) srcPtr.ToPointer();
+
+            for(int i = 0, byteIndex = 0; i < width; i++, byteIndex += 4)
             {
                 int index0 = byteIndex;
                 int index1 = byteIndex + 1;
                 int index2 = byteIndex + 2;
                 int index3 = byteIndex + 3;
 
-                //RGBA -> BGRA
-                byte r = rgbaPtr[index0];
-                byte g = rgbaPtr[index1];
-                byte b = rgbaPtr[index2];
-                byte a = rgbaPtr[index3];
+                byte t0 = sPtr[index0];
+                byte t1 = sPtr[index1];
+                byte t2 = sPtr[index2];
+                byte t3 = sPtr[index3];
 
-                bgraPtr[index0] = b;
-                bgraPtr[index1] = g;
-                bgraPtr[index2] = r;
-                bgraPtr[index3] = a;
-            }
-        }
-
-        /// <summary>
-        /// Copies texel by texel in the scanline, swapping B and R components along the way.
-        /// </summary>
-        /// <param name="bgraLine">Scanline of BGRA texels, the source data.</param>
-        /// <param name="rgbaLine">Scanline of RGBA texels, the destination data.</param>
-        /// <param name="count">Number of texels to copy.</param>
-        public static unsafe void CopyLineToRGBA(IntPtr bgraLine, IntPtr rgbaLine, int count)
-        {
-            byte* rgbaPtr = (byte*) rgbaLine.ToPointer();
-            byte* bgraPtr = (byte*) bgraLine.ToPointer();
-
-            for(int i = 0, byteIndex = 0; i < count; i++, byteIndex += 4)
-            {
-                int index0 = byteIndex;
-                int index1 = byteIndex + 1;
-                int index2 = byteIndex + 2;
-                int index3 = byteIndex + 3;
-
-                //BGRA -> RGBA
-                byte b = bgraPtr[index0];
-                byte g = bgraPtr[index1];
-                byte r = bgraPtr[index2];
-                byte a = bgraPtr[index3];
-
-                rgbaPtr[index0] = r;
-                rgbaPtr[index1] = g;
-                rgbaPtr[index2] = b;
-                rgbaPtr[index3] = a;
+                //Swap t0 and t2
+                dPtr[index0] = t2;
+                dPtr[index1] = t1;
+                dPtr[index2] = t0;
+                dPtr[index3] = t3;
             }
         }
     }

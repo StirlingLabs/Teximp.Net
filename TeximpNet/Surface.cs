@@ -463,44 +463,37 @@ namespace TeximpNet
         public static Surface LoadFromRawData(IntPtr imageDataPtr, int width, int height, int rowPitch, bool isBGRA, bool isTopDown = false)
         {
             ColorOrder colorOrder = Surface.ColorOrder;
+            int formatSizeBytes = 4; //32 bpp pixels;
+            uint formatSizeBits = 32;
 
-            if (colorOrder.IsBGRAOrder != isBGRA)
+            IntPtr data = imageDataPtr;
+            bool disposeData = false;
+
+            try
             {
-                //Need to convert data
-                IntPtr tempData = MemoryHelper.AllocateMemory(width * height * 4); //32 bpp pixels
-
-                try
+                //Convert if color order does not match incoming color order
+                if (colorOrder.IsBGRAOrder != isBGRA)
                 {
-                    if(isBGRA)
-                    {
-                        //Convert to RGBA
-                        ImageHelper.CopyBGRAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
-                    }
-                    else
-                    {
-                        //Convert to BGRA
-                        ImageHelper.CopyRGBAImageData(tempData, imageDataPtr, width, height, 1, rowPitch, 0);
-                    }
+                    disposeData = true;
+                    data = MemoryHelper.AllocateMemory(width * height * formatSizeBytes);
+                    ImageHelper.CopyColorImageData(data, imageDataPtr, rowPitch, 0, width, height, 1, true);
 
-                    IntPtr surfacePtr = FreeImageLibrary.Instance.ConvertFromRawBitsEx(true, tempData, ImageType.Bitmap, width, height, width * 4, 32, colorOrder.RedMask, colorOrder.GreenIndex, colorOrder.BlueMask, isTopDown);
-                    if (surfacePtr == IntPtr.Zero)
-                        return null;
+                    //Compute new row pitch
+                    rowPitch = width * formatSizeBytes;
+                }
 
-                    return new Surface(surfacePtr);
-                }
-                finally
-                {
-                    MemoryHelper.FreeMemory(tempData);
-                }
-            }
-            else
-            {
-                IntPtr surfacePtr = FreeImageLibrary.Instance.ConvertFromRawBitsEx(true, imageDataPtr, ImageType.Bitmap, width, height, rowPitch, 32, colorOrder.RedMask, colorOrder.GreenIndex, colorOrder.BlueMask, isTopDown);
+                IntPtr surfacePtr = FreeImageLibrary.Instance.ConvertFromRawBitsEx(true, data, ImageType.Bitmap, width, height, rowPitch, formatSizeBits, colorOrder.RedMask, colorOrder.GreenIndex, colorOrder.BlueMask, isTopDown);
                 if (surfacePtr == IntPtr.Zero)
                     return null;
 
                 return new Surface(surfacePtr);
             }
+            finally
+            {
+                //Free temp memory, if we allocated it
+                if (disposeData)
+                    MemoryHelper.FreeMemory(data);
+            }           
         }
 
         /// <summary>

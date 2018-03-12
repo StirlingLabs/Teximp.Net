@@ -245,7 +245,7 @@ namespace TeximpNet.Test
         }
 
         [Fact]
-        public void TestLoadRawData()
+        public void TestLoadRawData_RGBA()
         {
             RGBAQuad[] data = new RGBAQuad[100];
             int width = 10;
@@ -259,7 +259,26 @@ namespace TeximpNet.Test
             Surface newSurface = Surface.LoadFromRawData(ptr, width, height, width * 4, false, true);
             Assert.NotNull(newSurface);
 
-            String outputFile = GetOutputFile("rawRedDot.bmp");
+            String outputFile = GetOutputFile("rawRedDot-RgbaSrc.bmp");
+            newSurface.SaveToFile(ImageFormat.BMP, outputFile);
+        }
+
+        [Fact]
+        public void TestLoadRawData_BGRA()
+        {
+            BGRAQuad[] data = new BGRAQuad[100];
+            int width = 10;
+            int height = 10;
+
+            for (int i = 0; i < 100; i++)
+                data[i] = new BGRAQuad(100, 5, 200, 255); //BGRA data, reddish color. If gets flipped, it'll come out as a purple-ish color.
+
+            IntPtr ptr = MemoryHelper.PinObject(data);
+
+            Surface newSurface = Surface.LoadFromRawData(ptr, width, height, width * 4, true, true);
+            Assert.NotNull(newSurface);
+
+            String outputFile = GetOutputFile("rawRedDot-BgraSrc.bmp");
             newSurface.SaveToFile(ImageFormat.BMP, outputFile);
         }
     }

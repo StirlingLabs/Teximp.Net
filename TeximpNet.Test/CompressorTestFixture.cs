@@ -170,7 +170,7 @@ namespace TeximpNet.Test
                         imageFromFile.ConvertTo(ImageConversion.To32Bits);
 
                         //Copy contents of slice to our 3D image
-                        ImageHelper.CopyBGRAImageData(currSlice, imageFromFile.DataPtr, imageFromFile.Width, imageFromFile.Height, 1, imageFromFile.Pitch, 0);
+                        ImageHelper.CopyColorImageData(currSlice, imageFromFile.DataPtr, imageFromFile.Pitch, 0, imageFromFile.Width, imageFromFile.Height, 1);
                     }
 
                     currSlice = MemoryHelper.AddIntPtr(currSlice, slicePitch);

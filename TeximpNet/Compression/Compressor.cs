@@ -1091,14 +1091,14 @@ namespace TeximpNet.Compression
 
                 m_faceHasData[arrayIndex] = success;
             }
-
+           
             private unsafe IntPtr CopyBGRAData(IntPtr srcBgraPtr, int width, int height, int depth, int rowPitch, int slicePitch)
             {
                 int formatSize = 4; //4-byte BGRA texel
 
                 //Input to compressor will be a simple array of the texels, no padding (note: at least from what I can tell from NVTT docs and sourcecode!)
                 IntPtr dstBgraPtr = MemoryHelper.AllocateMemory(width * height * depth * formatSize);
-                ImageHelper.CopyBGRAImageData(dstBgraPtr, srcBgraPtr, width, height, depth, rowPitch, slicePitch);
+                ImageHelper.CopyColorImageData(dstBgraPtr, srcBgraPtr, rowPitch, slicePitch, width, height, depth, false);
 
                 return dstBgraPtr;
             }
@@ -1109,7 +1109,7 @@ namespace TeximpNet.Compression
 
                 //Input to compressor will be a simple array of the texels, no padding (note: at least from what I can tell from NVTT docs and sourcecode!)
                 IntPtr dstBgraPtr = MemoryHelper.AllocateMemory(width * height * depth * formatSize);
-                ImageHelper.CopyRGBAImageData(dstBgraPtr, srcRgbaPtr, width, height, depth, rowPitch, slicePitch);
+                ImageHelper.CopyColorImageData(dstBgraPtr, srcRgbaPtr, rowPitch, slicePitch, width, height, depth, true);
 
                 return dstBgraPtr;
             }
