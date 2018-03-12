@@ -921,6 +921,8 @@ namespace TeximpNet.Unmanaged
             if (data == IntPtr.Zero)
                 return IntPtr.Zero;
 
+            LoadIfNotLoaded();
+
             Functions.FreeImage_ConvertFromRawBitsEx func = GetFunction<Functions.FreeImage_ConvertFromRawBitsEx>(FunctionNames.FreeImage_ConvertFromRawBitsEx);
 
             return func(copySource, data, imageType, width, height, pitch, bpp, redMask, greenMask, blueMask, topDown);
@@ -936,6 +938,8 @@ namespace TeximpNet.Unmanaged
         {
             if(src == IntPtr.Zero)
                 return IntPtr.Zero;
+
+            LoadIfNotLoaded();
 
             Functions.FreeImage_ConvertToStandardType func = GetFunction<Functions.FreeImage_ConvertToStandardType>(FunctionNames.FreeImage_ConvertToStandardType);
 
@@ -953,6 +957,8 @@ namespace TeximpNet.Unmanaged
         {
             if(src == IntPtr.Zero)
                 return IntPtr.Zero;
+
+            LoadIfNotLoaded();
 
             Functions.FreeImage_ConvertToType func = GetFunction<Functions.FreeImage_ConvertToType>(FunctionNames.FreeImage_ConvertToType);
 
