@@ -131,7 +131,8 @@ namespace TeximpNet
         /// <param name="legacyDword">True if need to use workaround computation for some incorrectly created DDS files based on legacy DirectDraw assumptions about pitch alignment.</param>
         public static void ComputePitch(DDS.DXGIFormat format, int width, int height, out int rowPitch, out int slicePitch, out int widthCount, out int heightCount, bool legacyDword = false)
         {
-            ComputePitch(format, width, height, out rowPitch, out slicePitch, out widthCount, out heightCount, legacyDword);
+            int bytesPerPixel;
+            ComputePitch(format, width, height, out rowPitch, out slicePitch, out widthCount, out heightCount, out bytesPerPixel, legacyDword);
         }
 
         /// <summary>
