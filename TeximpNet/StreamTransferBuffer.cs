@@ -89,18 +89,12 @@ namespace TeximpNet
         /// <summary>
         /// Constructs a new instance of the <see cref="StreamTransferBuffer"/> class.
         /// </summary>
-        /// <param name="numBytes">Size of the buffer, but cannot exceed LOH allocation of 85,000 bytes.</param>
-        public StreamTransferBuffer(int numBytes)
+        /// <param name="numBytes">Size of the buffer, but cannot exceed LOH allocation of 85,000 bytes unless specified.</param>
+        /// <param name="avoidLOH">True to avoid Large Object Heap allocation by allocating a buffer slightly larger than 85k bytes, false to allow any sized buffer.</param>
+        public StreamTransferBuffer(int numBytes, bool avoidLOH = true)
         {
-            if(numBytes <= 0)
-                numBytes = 81920;
-
-            //Restrict buffer size to be less than LOH min size < 85,000 bytes
-            numBytes = Math.Min(numBytes, 85000);
-            m_buffer = new byte[numBytes];
-            m_pinHandle = GCHandle.Alloc(m_buffer, GCHandleType.Pinned);
             m_isDisposed = false;
-            m_lastReadByteCount = 0;
+            Resize(numBytes, avoidLOH);
         }
 
         /// <summary>
@@ -190,6 +184,30 @@ namespace TeximpNet
 
             //Write to stream
             WriteBytes(output, size);
+        }
+
+        /// <summary>
+        /// Resizes the transfer buffer to be the specified number of bytes.
+        /// </summary>
+        /// <param name="numBytes">Size of the buffer, but cannot exceed LOH allocation of 85,000 bytes unless specified.</param>
+        /// <param name="avoidLOH">True to avoid Large Object Heap allocation by allocating a buffer slightly larger than 85k bytes, false to allow any sized buffer.</param>
+        public void Resize(int numBytes, bool avoidLOH = true)
+        {
+            if(m_isDisposed)
+                throw new ObjectDisposedException("StreamTransferBuffer");
+
+            //If already had a buffer...ensure its unpinned
+            if(m_pinHandle.IsAllocated)
+                m_pinHandle.Free();
+
+            if(numBytes <= 0)
+                numBytes = 81920;
+
+            //Restrict buffer size to be less than LOH min size < 85,000 bytes
+            numBytes = (avoidLOH) ? Math.Min(numBytes, 85000) : numBytes;
+            m_buffer = new byte[numBytes];
+            m_pinHandle = GCHandle.Alloc(m_buffer, GCHandleType.Pinned);
+            m_lastReadByteCount = 0;
         }
 
         /// <summary>

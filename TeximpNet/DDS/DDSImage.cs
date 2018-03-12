@@ -121,8 +121,8 @@ namespace TeximpNet.DDS
             if(m_mipChains.Count == 0 || m_mipChains[0].Count == 0)
                 return false;
 
-            //Validate cubemap...must have exactly 6 faces
-            if(m_dimension == TextureDimension.Cube && m_mipChains.Count != 6)
+            //Validate cubemap...must have multiples of 6 faces (can be an array of cubes).
+            if(m_dimension == TextureDimension.Cube && (m_mipChains.Count % 6) != 0)
                 return false;
 
             //Validate 3d texture..can't have arrays
@@ -183,6 +183,28 @@ namespace TeximpNet.DDS
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Writes images to a DDS file to disk.
+        /// </summary>
+        /// <param name="fileName">File to write to. If it doesn't exist, it will be created.</param>
+        /// <param name="flags">Flags to control how the DDS data is saved.</param>
+        /// <returns>True if writing the data was successful, false if otherwise.</returns>
+        public bool Write(String fileName, DDSFlags flags = DDSFlags.None)
+        {
+            return Write(fileName, m_mipChains, m_format, m_dimension, flags);
+        }
+
+        /// <summary>
+        /// Writes images contained as DDS formatted data to a stream.
+        /// </summary>
+        /// <param name="output">Output stream.</param>
+        /// <param name="flags">Flags to control how the DDS data is saved.</param>
+        /// <returns>True if writing the data was successful, false if otherwise.</returns>
+        public bool Write(Stream output, DDSFlags flags = DDSFlags.None)
+        {
+            return Write(output, m_mipChains, m_format, m_dimension, flags);
         }
 
         /// <summary>
@@ -291,8 +313,11 @@ namespace TeximpNet.DDS
                         {
                             if((extendedHeader.MiscFlags & Header10Flags.TextureCube) == Header10Flags.TextureCube)
                             {
-                                if(arrayCount != 6)
+                                //Can have arrays of tex cubes, so must be multiples of 6
+                                if(arrayCount % 6 != 0)
                                     return null;
+
+                                arrayCount *= 6;
 
                                 texDim = TextureDimension.Cube;
                             }
@@ -371,9 +396,7 @@ namespace TeximpNet.DDS
             IntPtr scanlinePtr = buffer.Pointer;
             bool noPadding = (flags & DDSFlags.NoPadding) == DDSFlags.NoPadding ? true : false;
             bool isCompressed = FormatConverter.IsCompressed(format);
-            bool resizedScanline = false;
             bool errored = false;
-            GCHandle handle = new GCHandle();
 
             try
             {
@@ -425,13 +448,8 @@ namespace TeximpNet.DDS
                         mipChain.Add(mipSurface);
 
                         //Ensure read buffer is sufficiently sized for a single scanline
-                        if(!resizedScanline && scanline.Length < srcRowPitch)
-                        {
-                            resizedScanline = true;
-                            scanline = new byte[srcRowPitch];
-                            handle = GCHandle.Alloc(scanline, GCHandleType.Pinned);
-                            scanlinePtr = handle.AddrOfPinnedObject();
-                        }
+                        if(buffer.Length < srcRowPitch)
+                            buffer.Resize(srcRowPitch, false);
 
                         IntPtr dstPtr = data;
 
@@ -468,10 +486,6 @@ namespace TeximpNet.DDS
             }
             finally
             {
-                //Free temp scanline buffer, if we allocated it
-                if(resizedScanline && handle.IsAllocated)
-                    handle.Free();
-
                 //If errored, clean up any mip surfaces we allocated...no null entries should have been made either
                 if(errored)
                 {
@@ -490,6 +504,129 @@ namespace TeximpNet.DDS
             }
 
             return new DDSImage(mipChains, format, texDim);
+        }
+
+        /// <summary>
+        /// Writes a DDS file to disk. Image data is expected to be DXGI-compliant data, but an effort is made to write out D3D9-compatible headers when possible.
+        /// </summary>
+        /// <param name="fileName">File to write to. If it doesn't exist, it will be created.</param>
+        /// <param name="mipChains">Mipmap chains to write. Each mipmap chain represents a single face (so > 1 represents an array texture or a Cubemap). All faces must have
+        /// equivalent dimensions and each chain must have the same number of mipmaps.</param>
+        /// <param name="format">DXGI format the image data is stored as.</param>
+        /// <param name="texDim">Dimension of the texture to write.</param>
+        /// <param name="flags">Flags to control how the DDS data is saved.</param>
+        /// <returns>True if writing the data was successful, false if otherwise.</returns>
+        public static bool Write(String fileName, List<MipChain> mipChains, DXGIFormat format, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            if(!File.Exists(fileName))
+                return false;
+
+            using(FileStream fs = File.Create(fileName))
+                return Write(fs, mipChains, format, texDim, flags);
+        }
+
+        /// <summary>
+        /// Writes DDS formatted data to a stream. Image data is expected to be DXGI-compliant data, but an effort is made to write out D3D9-compatible headers when possible.
+        /// </summary>
+        /// <param name="output">Output stream.</param>
+        /// <param name="mipChains">Mipmap chains to write. Each mipmap chain represents a single face (so > 1 represents an array texture or a Cubemap). All faces must have
+        /// equivalent dimensions and each chain must have the same number of mipmaps.</param>
+        /// <param name="format">DXGI format the image data is stored as.</param>
+        /// <param name="texDim">Dimension of the texture to write.</param>
+        /// <param name="flags">Flags to control how the DDS data is saved.</param>
+        /// <returns>True if writing the data was successful, false if otherwise.</returns>
+        public static bool Write(Stream output, List<MipChain> mipChains, DXGIFormat format, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            if(output == null || !output.CanWrite || mipChains == null || mipChains.Count == 0 || mipChains[0].Count == 0 || format == DXGIFormat.Unknown)
+                return false;
+
+            //Extract details
+            int width, height, depth, arrayCount, mipCount;
+            MipSurface firstMip = mipChains[0][0];
+            width = firstMip.Width;
+            height = firstMip.Height;
+            depth = firstMip.Depth;
+            arrayCount = mipChains.Count;
+            mipCount = mipChains[0].Count;
+
+            int maxPitch = 0;
+
+            //Validate all the surfaces are valid
+            foreach(MipChain mipChain in mipChains)
+            {
+                if(mipChain == null || mipChain.Count != mipCount)
+                    return false;
+
+                //Ensure first matches extracted details
+                MipSurface mip0 = mipChain[0];
+                if(mip0.Width != width || mip0.Height != height || mip0.Depth != depth)
+                    return false;
+
+                foreach(MipSurface mip in mipChain)
+                {
+                    if(mip == null || mip.Data == IntPtr.Zero)
+                        return false;
+
+                    maxPitch = Math.Max(mip.RowPitch, maxPitch);
+                }
+            }
+
+            //Setup a transfer buffer
+            StreamTransferBuffer buffer = new StreamTransferBuffer(maxPitch, false);
+
+            //Write out header
+            if(!WriteHeader(output, buffer, texDim, format, width, height, depth, arrayCount, mipCount, flags))
+                return false;
+
+            //Iterate over each array face...
+            for(int i = 0; i < arrayCount; i++)
+            {
+                MipChain mipChain = mipChains[i];
+
+                //Iterate over each mip face...
+                for(int mipLevel = 0; mipLevel < mipCount; mipLevel++)
+                {
+                    MipSurface mip = mipChain[mipLevel];
+
+                    //Compute pitch, based on MSDN programming guide. We will write out these pitches rather than the supplied in order to conform to the recomendation
+                    //that we compute pitch based on format
+                    int realMipWidth, realMipHeight, dstRowPitch, dstSlicePitch, bytesPerPixel;
+                    ImageHelper.ComputePitch(format, mip.Width, mip.Height, out dstRowPitch, out dstSlicePitch, out realMipWidth, out realMipHeight, out bytesPerPixel);
+
+                    //Ensure write buffer is sufficiently sized for a single scanline
+                    if(buffer.Length < dstRowPitch)
+                        buffer.Resize(dstRowPitch, false);
+
+                    //Sanity check
+                    if(dstRowPitch < mip.RowPitch)
+                        return false;
+
+                    //Advance stream one slice at a time...
+                    for(int slice = 0; slice < mip.Depth; slice++)
+                    {
+                        int bytesToWrite = dstSlicePitch;
+
+                        //Copy scanline into temp buffer, write to output
+                        for(int row = 0; row < realMipHeight; row++)
+                        {
+                            MemoryHelper.CopyMemory(buffer.Pointer, mip.Data, dstRowPitch);
+                            buffer.WriteBytes(output, dstRowPitch);
+                            bytesToWrite -= dstRowPitch;
+                        }
+
+                        //Pad slice if necessary
+                        if(bytesToWrite > 0)
+                        {
+                            MemoryHelper.ClearMemory(buffer.Pointer, 0, bytesToWrite);
+                            buffer.WriteBytes(output, bytesToWrite);
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            return true;
         }
 
         private static bool ReadHeader(Stream input, StreamTransferBuffer buffer, out Header header, out Header10? headerExt)
@@ -534,6 +671,221 @@ namespace TeximpNet.DDS
             //Ensure have at least one miplevel, seems like sometimes this will be zero even though there is one mip surface (the main image)
             if(header.MipMapCount == 0)
                 header.MipMapCount = 1;
+
+            return true;
+        }
+
+        private static bool WriteHeader(Stream output, StreamTransferBuffer buffer, TextureDimension texDim, DXGIFormat format, int width, int height, int depth, int arrayCount, int mipCount, DDSFlags flags)
+        {
+            //Force the DX10 header...
+            bool writeDX10Header = (flags & DDSFlags.ForceExtendedHeader) == DDSFlags.ForceExtendedHeader;
+
+            //Or do DX10 if the following is true...1D textures or 2D texture arrays that aren't cubemaps...
+            if(!writeDX10Header)
+            {
+                switch(texDim)
+                {
+                    case TextureDimension.One:
+                        writeDX10Header = true;
+                        break;
+                    case TextureDimension.Two:
+                        writeDX10Header = arrayCount > 1;
+                        break;
+                }
+            }
+
+            //Figure out pixel format, if not writing DX10 header...
+            PixelFormat pixelFormat;
+            if(!writeDX10Header)
+            {
+                switch(format)
+                {
+                    case DXGIFormat.R8G8B8A8_UNorm:
+                        pixelFormat = PixelFormat.A8B8G8R8;
+                        break;
+                    case DXGIFormat.R16G16_UNorm:
+                        pixelFormat = PixelFormat.G16R16;
+                        break;
+                    case DXGIFormat.R8G8_UNorm:
+                        pixelFormat = PixelFormat.A8L8;
+                        break;
+                    case DXGIFormat.R16_UNorm:
+                        pixelFormat = PixelFormat.L16;
+                        break;
+                    case DXGIFormat.R8_UNorm:
+                        pixelFormat = PixelFormat.L8;
+                        break;
+                    case DXGIFormat.A8_UNorm:
+                        pixelFormat = PixelFormat.A8;
+                        break;
+                    case DXGIFormat.R8G8_B8G8_UNorm:
+                        pixelFormat = PixelFormat.R8G8_B8G8;
+                        break;
+                    case DXGIFormat.G8R8_G8B8_UNorm:
+                        pixelFormat = PixelFormat.G8R8_G8B8;
+                        break;
+                    case DXGIFormat.BC1_UNorm:
+                        pixelFormat = PixelFormat.DXT1;
+                        break;
+                    case DXGIFormat.BC2_UNorm:
+                        pixelFormat = PixelFormat.DXT3;
+                        break;
+                    case DXGIFormat.BC3_UNorm:
+                        pixelFormat = PixelFormat.DXT5;
+                        break;
+                    case DXGIFormat.BC4_UNorm:
+                        pixelFormat = PixelFormat.BC4_UNorm;
+                        break;
+                    case DXGIFormat.BC4_SNorm:
+                        pixelFormat = PixelFormat.BC4_SNorm;
+                        break;
+                    case DXGIFormat.BC5_UNorm:
+                        pixelFormat = PixelFormat.BC5_UNorm;
+                        break;
+                    case DXGIFormat.BC5_SNorm:
+                        pixelFormat = PixelFormat.BC5_SNorm;
+                        break;
+                    case DXGIFormat.B5G6R5_UNorm:
+                        pixelFormat = PixelFormat.R5G6B5;
+                        break;
+                    case DXGIFormat.B5G5R5A1_UNorm:
+                        pixelFormat = PixelFormat.A1R5G5B5;
+                        break;
+                    case DXGIFormat.B8G8R8A8_UNorm:
+                        pixelFormat = PixelFormat.A8R8G8B8;
+                        break;
+                    case DXGIFormat.B8G8R8X8_UNorm:
+                        pixelFormat = PixelFormat.X8R8G8B8;
+                        break;
+                    case DXGIFormat.B4G4R4A4_UNorm:
+                        pixelFormat = PixelFormat.A4R4G4B4;
+                        break;
+                    case DXGIFormat.R32G32B32A32_Float:
+                        pixelFormat = PixelFormat.R32G32B32A32_Float;
+                        break;
+                    case DXGIFormat.R16G16B16A16_Float:
+                        pixelFormat = PixelFormat.R16G16B16A16_Float;
+                        break;
+                    case DXGIFormat.R16G16B16A16_UNorm:
+                        pixelFormat = PixelFormat.R16G16B16A16_UNorm;
+                        break;
+                    case DXGIFormat.R16G16B16A16_SNorm:
+                        pixelFormat = PixelFormat.R16G16B16A16_SNorm;
+                        break;
+                    case DXGIFormat.R32G32_Float:
+                        pixelFormat = PixelFormat.R32G32_Float;
+                        break;
+                    case DXGIFormat.R16G16_Float:
+                        pixelFormat = PixelFormat.R16G16_Float;
+                        break;
+                    case DXGIFormat.R32_Float:
+                        pixelFormat = PixelFormat.R32_Float;
+                        break;
+                    case DXGIFormat.R16_Float:
+                        pixelFormat = PixelFormat.R16_Float;
+                        break;
+                    default:
+                        pixelFormat = PixelFormat.DX10Extended;
+                        writeDX10Header = true;
+                        break;
+                }
+            }
+            else
+            {
+                pixelFormat = PixelFormat.DX10Extended;
+            }
+
+            Header header = new Header();
+            header.Size = (uint) MemoryHelper.SizeOf<Header>();
+            header.PixelFormat = pixelFormat;
+            header.Flags = HeaderFlags.Caps | HeaderFlags.Width | HeaderFlags.Height | HeaderFlags.PixelFormat;
+            header.Caps = HeaderCaps.Texture;
+
+            Header10? header10 = null;
+
+            if(mipCount > 0)
+            {
+                header.Flags |= HeaderFlags.MipMapCount;
+                header.MipMapCount = (uint) mipCount;
+                header.Caps |= HeaderCaps.MipMap;
+            }
+
+            switch(texDim)
+            {
+                case TextureDimension.One:
+                    header.Width = (uint) width;
+                    header.Height = 1;
+                    header.Depth = 1;
+
+                    //Should always be writing out extended header for 1D textures
+                    System.Diagnostics.Debug.Assert(writeDX10Header);
+
+                    header10 = new Header10(format, D3D10ResourceDimension.Texture1D, Header10Flags.None, (uint) arrayCount, Header10Flags2.None);
+
+                    break;
+                case TextureDimension.Two:
+                    header.Width = (uint) width;
+                    header.Height = (uint) height;
+                    header.Depth = 1;
+
+                    if(writeDX10Header)
+                        header10 = new Header10(format, D3D10ResourceDimension.Texture2D, Header10Flags.None, (uint) arrayCount, Header10Flags2.None);
+
+                    break;
+                case TextureDimension.Cube:
+                    header.Width = (uint) width;
+                    header.Height = (uint) height;
+                    header.Depth = 1;
+                    header.Caps |= HeaderCaps.Complex;
+                    header.Caps2 |= HeaderCaps2.Cubemap_AllFaces;
+
+                    //can support array tex cubes, so must be multiples of 6
+                    if(arrayCount % 6 != 0)
+                        return false;
+
+                    if(writeDX10Header)
+                        header10 = new Header10(format, D3D10ResourceDimension.Texture2D, Header10Flags.TextureCube, (uint) arrayCount / 6, Header10Flags2.None);
+
+                    break;
+                case TextureDimension.Three:
+                    header.Width = (uint) width;
+                    header.Height = (uint) height;
+                    header.Depth = (uint) depth;
+                    header.Flags |= HeaderFlags.Depth;
+                    header.Caps2 |= HeaderCaps2.Volume;
+
+                    if(arrayCount != 1)
+                        return false;
+
+                    if(writeDX10Header)
+                        header10 = new Header10(format, D3D10ResourceDimension.Texture3D, Header10Flags.None, 1, Header10Flags2.None);
+
+                    break;
+            }
+
+            int realWidth, realHeight, rowPitch, slicePitch;
+            ImageHelper.ComputePitch(format, width, height, out rowPitch, out slicePitch, out realWidth, out realHeight);
+
+            if(FormatConverter.IsCompressed(format))
+            {
+                header.Flags |= HeaderFlags.LinearSize;
+                header.PitchOrLinearSize = (uint) slicePitch;
+            }
+            else
+            {
+                header.Flags |= HeaderFlags.Pitch;
+                header.PitchOrLinearSize = (uint) rowPitch;
+            }
+
+            //Write out magic word, DDS header, and optionally extended header
+            buffer.Write<FourCC>(output, DDS_MAGIC);
+            buffer.Write<Header>(output, header);
+
+            if(header10.HasValue)
+            {
+                System.Diagnostics.Debug.Assert(header.PixelFormat.IsDX10Extended);
+                buffer.Write<Header10>(output, header10.Value);
+            }
 
             return true;
         }

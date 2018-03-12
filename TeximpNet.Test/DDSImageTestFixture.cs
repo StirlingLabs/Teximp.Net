@@ -41,6 +41,25 @@ namespace TeximpNet.Test
         }
 
         [Fact]
+        public void TestRoundTripCompressed()
+        {
+            String file = GetInputFile("DDS/bunny_DXT1.dds");
+            String fileOut = GetOutputFile("DDS/bunny_DXT1.dds");
+
+            using(DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
+
+                image.Write(fileOut);
+            }
+
+            using(DDSImage image = DDSImage.Read(fileOut))
+            {
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
+            }
+        }
+
+        [Fact]
         public void TestLoadUncompressed()
         {
             //no 24bpp DXGI, so convert to RGBA, also swizzles it automatically

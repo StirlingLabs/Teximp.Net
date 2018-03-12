@@ -148,6 +148,15 @@ namespace TeximpNet.DDS
         public Header10Flags MiscFlags;
         public uint ArraySize;
         public Header10Flags2 MiscFlags2;
+
+        public Header10(DXGIFormat format, D3D10ResourceDimension resourceDim, Header10Flags miscFlags, uint arraySize, Header10Flags2 miscFlags2)
+        {
+            Format = format;
+            ResourceDimension = resourceDim;
+            MiscFlags = miscFlags;
+            ArraySize = arraySize;
+            MiscFlags2 = miscFlags2;
+        }
     }
 
     /// <summary>
@@ -201,6 +210,9 @@ namespace TeximpNet.DDS
             BlueBitMask = 0;
             AlphaBitMask = 0;
         }
+
+        //Not a format, but signifies if there exists an extended header with DXGI format enum
+        public static readonly PixelFormat DX10Extended = new PixelFormat(PixelFormatFlags.FourCC, new FourCC('D', 'X', '1', '0'));
 
         #region Common Legacy Formats
 
