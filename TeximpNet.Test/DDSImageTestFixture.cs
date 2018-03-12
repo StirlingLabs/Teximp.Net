@@ -44,19 +44,34 @@ namespace TeximpNet.Test
         public void TestRoundTripCompressed()
         {
             String file = GetInputFile("DDS/bunny_DXT1.dds");
-            String fileOut = GetOutputFile("DDS/bunny_DXT1.dds");
+            String fileOut = GetOutputFile("bunny_DXT1.dds");
 
             using(DDSImage image = DDSImage.Read(file))
             {
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
 
-                image.Write(fileOut);
+                Assert.True(image.Write(fileOut));
             }
 
             using(DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
+        }
+
+        [Fact]
+        public void TestRoundTripCompressed_ForceDX10()
+        {
+            String file = GetInputFile("DDS/bunny_DXT1.dds");
+            String fileOut = GetOutputFile("bunny_DXT1_DX10.dds");
+
+            using (DDSImage image = DDSImage.Read(file))
             {
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
+
+                Assert.True(image.Write(fileOut, DDSFlags.ForceExtendedHeader));
             }
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
         }
 
         [Fact]
@@ -81,11 +96,111 @@ namespace TeximpNet.Test
         }
 
         [Fact]
+        public void TestLoadThenMakeFreeImage()
+        {
+            String file = GetInputFile("DDS/bunny_BGRA.dds");
+            String fileOut = GetOutputFile("bunny_BGRA.bmp");
+
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
+
+                MipSurface mip0 = image.MipChains[0][0];
+                Surface s = Surface.LoadFromRawData(mip0.Data, mip0.Width, mip0.Height, mip0.RowPitch, true, true);
+                Assert.True(s.SaveToFile(ImageFormat.BMP, fileOut));
+            }
+        }
+
+        [Fact]
+        public void TestRoundTripUnCompressed()
+        {
+            String file = GetInputFile("DDS/bunny_BGRA.dds");
+            String fileOut = GetOutputFile("bunny_BGRA.dds");
+
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
+
+                Assert.True(image.Write(fileOut));
+            }
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
+        }
+
+        [Fact]
+        public void TestRoundTripUnCompressed_ForceDX10()
+        {
+            String file = GetInputFile("DDS/bunny_BGRA.dds");
+            String fileOut = GetOutputFile("bunny_BGRA_DX10.dds");
+
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
+
+                Assert.True(image.Write(fileOut, DDSFlags.ForceExtendedHeader));
+            }
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
+        }
+
+        [Fact]
         public void TestLoadCubemap()
         {
             String file = GetInputFile("DDS/Cubemap.dds");
             using (DDSImage image = DDSImage.Read(file))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
+        }
+
+        [Fact]
+        public void TestRoundTripCubemap()
+        {
+            String file = GetInputFile("DDS/Cubemap.dds");
+            String fileOut = GetOutputFile("Cubemap.dds");
+
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
+
+                Assert.True(image.Write(fileOut));
+            }
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
+        }
+
+        [Fact]
+        public void TestRoundTripCubemap_ForceDX10()
+        {
+            String file = GetInputFile("DDS/Cubemap.dds");
+            String fileOut = GetOutputFile("Cubemap_DX10.dds");
+
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
+
+                Assert.True(image.Write(fileOut, DDSFlags.ForceExtendedHeader));
+            }
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
+        }
+
+        [Fact]
+        public void TestLoadDX10ThenMakeFreeImage()
+        {
+            String file = GetInputFile("DDS/bunny_BGRA_DX10.dds");
+            String fileOut = GetOutputFile("bunny_BGRA_DX10.bmp");
+
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
+
+                MipSurface mip0 = image.MipChains[0][0];
+                Surface s = Surface.LoadFromRawData(mip0.Data, mip0.Width, mip0.Height, mip0.RowPitch, true, true);
+                Assert.True(s.SaveToFile(ImageFormat.BMP, fileOut));
+            }
         }
 
         [Fact]
@@ -102,6 +217,38 @@ namespace TeximpNet.Test
             file = GetInputFile("DDS/Volume_DXT1.dds");
             using (DDSImage image = DDSImage.Read(file))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Three, false, true, true, true);
+        }
+
+        [Fact]
+        public void TestRoundTripVolume()
+        {
+            String file = GetInputFile("DDS/Volume_BGRA.dds");
+            String fileOut = GetOutputFile("Volume_BGRA.dds");
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
+
+                Assert.True(image.Write(fileOut));
+            }
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
+        }
+
+        [Fact]
+        public void TestRoundTripVolume_ForceDX10()
+        {
+            String file = GetInputFile("DDS/Volume_BGRA.dds");
+            String fileOut = GetOutputFile("Volume_BGRA_DX10.dds");
+            using (DDSImage image = DDSImage.Read(file))
+            {
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
+
+                Assert.True(image.Write(fileOut));
+            }
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
         }
 
         [Fact]
