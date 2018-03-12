@@ -622,8 +622,6 @@ namespace TeximpNet.DDS
                         }
                     }
                 }
-
-                return true;
             }
 
             return true;
