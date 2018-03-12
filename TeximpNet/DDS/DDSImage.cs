@@ -313,10 +313,7 @@ namespace TeximpNet.DDS
                         {
                             if((extendedHeader.MiscFlags & Header10Flags.TextureCube) == Header10Flags.TextureCube)
                             {
-                                //Can have arrays of tex cubes, so must be multiples of 6
-                                if(arrayCount % 6 != 0)
-                                    return null;
-
+                                //Specifies # of cubemaps, so to get total # of faces must multiple by 6
                                 arrayCount *= 6;
 
                                 texDim = TextureDimension.Cube;
@@ -601,17 +598,23 @@ namespace TeximpNet.DDS
                     if(dstRowPitch < mip.RowPitch)
                         return false;
 
+                    IntPtr srcPtr = mip.Data;
+
                     //Advance stream one slice at a time...
                     for(int slice = 0; slice < mip.Depth; slice++)
                     {
                         int bytesToWrite = dstSlicePitch;
+                        IntPtr sPtr = srcPtr;
 
                         //Copy scanline into temp buffer, write to output
                         for(int row = 0; row < realMipHeight; row++)
                         {
-                            MemoryHelper.CopyMemory(buffer.Pointer, mip.Data, dstRowPitch);
+                            MemoryHelper.CopyMemory(buffer.Pointer, sPtr, dstRowPitch);
                             buffer.WriteBytes(output, dstRowPitch);
                             bytesToWrite -= dstRowPitch;
+
+                            //Advance to next scanline in source data
+                            sPtr = MemoryHelper.AddIntPtr(sPtr, mip.RowPitch);
                         }
 
                         //Pad slice if necessary
@@ -620,6 +623,9 @@ namespace TeximpNet.DDS
                             MemoryHelper.ClearMemory(buffer.Pointer, 0, bytesToWrite);
                             buffer.WriteBytes(output, bytesToWrite);
                         }
+
+                        //Advance source pointer to next slice
+                        srcPtr = MemoryHelper.AddIntPtr(srcPtr, mip.SlicePitch);
                     }
                 }
             }
