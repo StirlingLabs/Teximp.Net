@@ -164,7 +164,6 @@ namespace TeximpNet.DDS
     /// enumeration is used.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
-    [DebuggerDisplay("Flags = {Flags}, FourCC = {FourCC}, BitsPerPixel = {RGBBitCount}, RedMask = {RedBitMask, h}, GreenMask = {GreenBitMask, h}, BlueMask = {BlueBitMask, h}, AlphaMask = {AlphaBitMask, h}")]
     internal struct PixelFormat
     {
         public uint Size;
@@ -209,6 +208,20 @@ namespace TeximpNet.DDS
             GreenBitMask = 0;
             BlueBitMask = 0;
             AlphaBitMask = 0;
+        }
+
+        public override string ToString()
+        {
+            if (Flags == PixelFormatFlags.FourCC)
+            {
+                //D3D Format enum is sometimes the first char, if so then it's not a proper fourCC and will just appear as a single character. Lets display the integer value instead in this case.
+                String fourCCValue = (FourCC.First > 0 && FourCC.Second == 0 && FourCC.Third == 0 && FourCC.Fourth == 0) ? ((int)FourCC.First).ToString() : FourCC.ToString();
+
+                return String.Format("Flags = {0}, FourCC = '{1}'", Flags.ToString(), fourCCValue);
+            }
+
+            return String.Format("Flags = {0}, BitsPerPixel = {1}, RedMask = 0x{2}, GreenMask = 0x{3}, BlueMask = 0x{4}, AlphaMask = 0x{5}", Flags.ToString(), RGBBitCount.ToString(),
+                RedBitMask.ToString("X8"), GreenBitMask.ToString("X8"), BlueBitMask.ToString("X8"), AlphaBitMask.ToString("X8"));
         }
 
         //Not a format, but signifies if there exists an extended header with DXGI format enum
