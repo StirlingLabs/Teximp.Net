@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 namespace TeximpNet.DDS
 {
@@ -97,16 +98,20 @@ namespace TeximpNet.DDS
     internal enum PixelFormatFlags : uint
     {
         None = 0,
+
+        //Has an alpha channel
         AlphaPixels = 0x1,
+
+        //ONLY has alpha data
         Alpha = 0x2,
         FourCC = 0x4,
         RGB = 0x40,
-        RGBA = RGB | Alpha,
+        RGBA = RGB | AlphaPixels,
         YUV = 0x200,
         Luminance = 0x20000,
-        LuminanceAlpha = Luminance | Alpha,
+        LuminanceAlpha = Luminance | AlphaPixels,
         Pal8 = 0x00000020,
-        Pal8Alpha = Pal8 | Alpha,
+        Pal8Alpha = Pal8 | AlphaPixels,
         BumpDUDV = 0x00080000
     }
 
@@ -118,6 +123,7 @@ namespace TeximpNet.DDS
     /// Header for a DDS file, comes right after the "DDS " magic word. If pixel format is set to use extended header, that comes right after this and then the data.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [DebuggerDisplay("Width = {Width}, Height = {Height}, Depth = {Depth}, Flags = {Flags}, MipCount = {MipMapCount}, Caps = {Caps}, Caps2 = {Caps2}, PixelFormat = {PixelFormat}")]
     internal unsafe struct Header
     {
         public uint Size;
@@ -140,11 +146,12 @@ namespace TeximpNet.DDS
     /// Represents the extended header in a DDS header, which may or may not exist. This specifies array textures and expresses DXGI formats rather than D3D9 legacy formats defined in <see cref="PixelFormat"/>.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [DebuggerDisplay("Format = {Format}, Dimension = {ResourceDimension}, ArraySize = {ArraySize}, MiscFlags = {MiscFlag}, MiscFlags2 = {MiscFlags2}")]
     internal struct Header10
     {
         public DXGIFormat Format;
         public D3D10ResourceDimension ResourceDimension;
-        public Header10Flags MiscFlag;
+        public Header10Flags MiscFlags;
         public uint ArraySize;
         public Header10Flags2 MiscFlags2;
     }
@@ -154,6 +161,7 @@ namespace TeximpNet.DDS
     /// enumeration is used.
     /// </summary>
     [StructLayout(LayoutKind.Sequential, Pack = 1)]
+    [DebuggerDisplay("Flags = {Flags}, FourCC = {FourCC}, BitsPerPixel = {RGBBitCount}, RedMask = {RedBitMask, h}, GreenMask = {GreenBitMask, h}, BlueMask = {BlueBitMask, h}, AlphaMask = {AlphaBitMask, h}")]
     internal struct PixelFormat
     {
         public uint Size;

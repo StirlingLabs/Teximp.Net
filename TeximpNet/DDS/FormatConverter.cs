@@ -1,6 +1,29 @@
-﻿using System;
+﻿/*
+* Copyright (c) 2016-2018 TeximpNet - Nicholas Woodfield
+* 
+* Permission is hereby granted, free of charge, to any person obtaining a copy
+* of this software and associated documentation files (the "Software"), to deal
+* in the Software without restriction, including without limitation the rights
+* to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+* copies of the Software, and to permit persons to whom the Software is
+* furnished to do so, subject to the following conditions:
+* 
+* The above copyright notice and this permission notice shall be included in
+* all copies or substantial portions of the Software.
+* 
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+* IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+* FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+* AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+* LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+* OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+* THE SOFTWARE.
+*/
+
+using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Diagnostics;
 
 namespace TeximpNet.DDS
 {
@@ -50,6 +73,7 @@ namespace TeximpNet.DDS
     }
 
     //Maps legacy pixel formats to DXGI formats and have optional conversion flags denoting how the old format should be handled (if at all). Some formats can just be treated as a DXGI format without modification.
+    [DebuggerDisplay("Format = {Format}, ConversionFlags = {ConversionFlags}, LegacyFormat = {LegacyFormat}")]
     internal struct LegacyFormatMap
     {
         public DXGIFormat Format;
@@ -322,6 +346,35 @@ namespace TeximpNet.DDS
         public static bool HasConversionFlag(ConversionFlags bitSet, ConversionFlags flag)
         {
             return (bitSet & flag) == flag;
+        }
+
+        public static int LegacyFormatBitsPerPixelFromConversionFlag(ConversionFlags flags)
+        {
+            if (HasConversionFlag(flags, ConversionFlags.Pal8))
+                return HasConversionFlag(flags, ConversionFlags.FormatA8P8) ? 16 : 8;
+
+            if (HasConversionFlag(flags, ConversionFlags.Format888))
+                return 24;
+
+            if (HasConversionFlag(flags, ConversionFlags.Format332))
+                return 8;
+
+            if (HasConversionFlag(flags, ConversionFlags.Format8332))
+                return 16;
+
+            if (HasConversionFlag(flags, ConversionFlags.Format44))
+                return 8;
+
+            if (HasConversionFlag(flags, ConversionFlags.Format4444))
+                return 16;
+
+            if (HasConversionFlag(flags, ConversionFlags.Format565))
+                return 16;
+
+            if (HasConversionFlag(flags, ConversionFlags.Format5551))
+                return 16;
+
+            return 0;
         }
 
         public static LegacyFormat LegacyFormatFromConversionFlag(ConversionFlags flags)

@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace TeximpNet.DDS
 {
@@ -53,6 +54,7 @@ namespace TeximpNet.DDS
     /// Represents a single image.
     /// </summary>
     /// <seealso cref="System.IDisposable" />
+    [DebuggerDisplay("Width = {Width}, Height = {Height}, Depth = {Depth}, RowPitch = {RowPitch}, SlicePitch = {SlicePitch}, SizeInBytes = {SizeInBytes}, OwnsData = {OwnsData}")]
     public sealed class MipSurface : IDisposable
     {
         private bool m_isDisposed;
@@ -96,6 +98,17 @@ namespace TeximpNet.DDS
             get
             {
                 return Depth * SlicePitch;
+            }
+        }
+
+        /// <summary>
+        /// Gets if this object owns the image memory.
+        /// </summary>
+        public bool OwnsData
+        {
+            get
+            {
+                return m_ownData;
             }
         }
 
