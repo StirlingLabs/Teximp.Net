@@ -518,8 +518,8 @@ namespace TeximpNet.DDS
         /// <returns>True if writing the data was successful, false if otherwise.</returns>
         public static bool Write(String fileName, List<MipChain> mipChains, DXGIFormat format, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
         {
-            if(!File.Exists(fileName))
-                return false;
+            if (!Directory.Exists(Path.GetDirectoryName(fileName)))
+                Directory.CreateDirectory(Path.GetDirectoryName(fileName));
 
             using(FileStream fs = File.Create(fileName))
                 return Write(fs, mipChains, format, texDim, flags);
