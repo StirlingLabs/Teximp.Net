@@ -21,10 +21,8 @@
 */
 
 using System;
-using System.Collections.Generic;
-using System.Text;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace TeximpNet.DDS
 {
@@ -98,12 +96,8 @@ namespace TeximpNet.DDS
     internal enum PixelFormatFlags : uint
     {
         None = 0,
-
-        //Has an alpha channel
-        AlphaPixels = 0x1,
-
-        //ONLY has alpha data
-        Alpha = 0x2,
+        AlphaPixels = 0x1, //Has an alpha channel
+        Alpha = 0x2, //ONLY has alpha data, some old files use this
         FourCC = 0x4,
         RGB = 0x40,
         RGBA = RGB | AlphaPixels,

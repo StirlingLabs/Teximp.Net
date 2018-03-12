@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -31,7 +32,7 @@ namespace TeximpNet.DDS
     /// Represents a set of texture images that was loaded from a DDS file format. A number of texture types are supported, such as 1D, 2D, and 3D image data. Each <see cref="MipChain"/>
     /// collection represents a complete mipmap chain of a single face (e.g. 6 of these chains make up a cubemap). Most textures will just have a single mipmap chain.
     /// </summary>
-    /// <seealso cref="System.IDisposable" />
+    [DebuggerDisplay("Dimension = {Dimension}, Format = {Format}, ArrayCount = {MipChains.Count}, MipCount = {MipChains.Count == 0 ? 0 : MipChains[0].Count}")]
     public sealed class DDSImage : IDisposable
     {
         //The 4 characters "DDS "
@@ -222,6 +223,13 @@ namespace TeximpNet.DDS
             return magicWord == DDS_MAGIC;
         }
 
+        /// <summary>
+        /// Reads a DDS file from disk. Image data is always returned as DXGI-Compliant
+        /// format, therefore some old legacy formats will automatically be converted.
+        /// </summary>
+        /// <param name="fileName">File to load.</param>
+        /// <param name="flags">Flags to control how the DDS data is loaded.</param>
+        /// <returns>Loaded image data, or null if the data failed to load.</returns>
         public static DDSImage Read(String fileName, DDSFlags flags = DDSFlags.None)
         {
             if(!File.Exists(fileName))
@@ -231,6 +239,13 @@ namespace TeximpNet.DDS
                 return Read(fs, flags);
         }
 
+        /// <summary>
+        /// Reads DDS formatted data from a stream. Image data is always returned as DXGI-Compliant
+        /// format, therefore some old legacy formats will automatically be converted.
+        /// </summary>
+        /// <param name="input">Input stream.</param>
+        /// <param name="flags">Flags to control how the DDS data is loaded.</param>
+        /// <returns>Loaded image data, or null if the data failed to load.</returns>
         public static DDSImage Read(Stream input, DDSFlags flags = DDSFlags.None)
         {
             StreamTransferBuffer buffer = new StreamTransferBuffer();
@@ -274,7 +289,7 @@ namespace TeximpNet.DDS
                         break;
                     case D3D10ResourceDimension.Texture2D:
                         {
-                            if((extendedHeader.MiscFlag & Header10Flags.TextureCube) == Header10Flags.TextureCube)
+                            if((extendedHeader.MiscFlags & Header10Flags.TextureCube) == Header10Flags.TextureCube)
                             {
                                 if(arrayCount != 6)
                                     return null;
@@ -343,7 +358,7 @@ namespace TeximpNet.DDS
                 int palSize = palette.Length * sizeof(int);
                 buffer.ReadBytes(input, palSize);
 
-                if(buffer.LastReadByteCount != palette.Length)
+                if(buffer.LastReadByteCount != palSize)
                     return null;
 
                 MemoryHelper.CopyBytes<int>(buffer.ByteArray, 0, palette, 0, palette.Length);
@@ -375,69 +390,78 @@ namespace TeximpNet.DDS
                         int mipWidth = width;
                         int mipHeight = height;
                         int mipDepth = depth;
-                        ImageHelper.CalculateMipmapLevelDimensions(0, ref mipWidth, ref mipHeight, ref mipDepth);
+                        ImageHelper.CalculateMipmapLevelDimensions(mipLevel, ref mipWidth, ref mipHeight, ref mipDepth);
 
-                        //Compute pitch, MSDN says PitchOrLinearSize is unreliable and to calculate based on format.
-                        int compressedWidth, compressedHeight, rowPitch, slicePitch, bytesPerPixel;
-                        ImageHelper.ComputePitch(format, mipWidth, mipHeight, out rowPitch, out slicePitch, out compressedWidth, out compressedHeight, out bytesPerPixel, legacyDword);
+                        //Compute pitch, based on MSDN programming guide which says PitchOrLinearSize is unreliable and to calculate based on format.
+                        //"real" mip width/height is the given mip width/height for all non-compressed, compressed images it will be smaller since each block
+                        //is a 4x4 region of pixels.
+                        int realMipWidth, realMipHeight, dstRowPitch, dstSlicePitch, bytesPerPixel;
+                        ImageHelper.ComputePitch(format, mipWidth, mipHeight, out dstRowPitch, out dstSlicePitch, out realMipWidth, out realMipHeight, out bytesPerPixel, legacyDword);
+     
+                        int srcRowPitch = dstRowPitch;
+                        int srcSlicePitch = dstSlicePitch;
 
-                        int srcRowPitch = rowPitch;
-                        int srcSlicePitch = slicePitch;
-
-                        //If output data is requested not to have padding, recompute pitches
-                        if(noPadding)
+                        //Are we converting from a legacy format, possibly?
+                        if(!headerExt.HasValue)
                         {
-                            if(isCompressed)
+                            int legacySize = FormatConverter.LegacyFormatBitsPerPixelFromConversionFlag(convFlags);
+                            if(legacySize != 0)
                             {
-                                rowPitch = bytesPerPixel * compressedWidth;
-                                slicePitch = rowPitch * compressedHeight;
-                            }
-                            else
-                            {
-                                rowPitch = bytesPerPixel * width;
-                                slicePitch = rowPitch * height;
+                                srcRowPitch = (realMipWidth * legacySize + 7) / 8;
+                                srcSlicePitch = srcRowPitch * realMipHeight;
                             }
                         }
 
+                        //If output data is requested not to have padding, recompute destination pitches
+                        if(noPadding)
+                        {
+                            dstRowPitch = bytesPerPixel * realMipWidth;
+                            dstSlicePitch = dstRowPitch * realMipHeight;
+                        }
+
                         //Setup memory to hold the loaded image
-                        IntPtr data = MemoryHelper.AllocateMemory(mipDepth * slicePitch);
-                        MipSurface mipSurface = new MipSurface(mipWidth, mipHeight, mipDepth, rowPitch, slicePitch, data);
+                        IntPtr data = MemoryHelper.AllocateMemory(mipDepth * dstSlicePitch);
+                        MipSurface mipSurface = new MipSurface(mipWidth, mipHeight, mipDepth, dstRowPitch, dstSlicePitch, data);
                         mipChain.Add(mipSurface);
 
                         //Ensure read buffer is sufficiently sized for a single scanline
-                        if(!resizedScanline && scanline.Length < rowPitch)
+                        if(!resizedScanline && scanline.Length < srcRowPitch)
                         {
                             resizedScanline = true;
-                            scanline = new byte[rowPitch];
+                            scanline = new byte[srcRowPitch];
                             handle = GCHandle.Alloc(scanline, GCHandleType.Pinned);
+                            scanlinePtr = handle.AddrOfPinnedObject();
                         }
 
                         IntPtr dstPtr = data;
 
                         //Advance stream one slice at a time...
-                        for(int slice = 0; slice < depth; slice++)
+                        for(int slice = 0; slice < mipDepth; slice++)
                         {
                             long slicePos = input.Position;
                             IntPtr dPtr = dstPtr;
 
                             //Copy scanline into temp buffer, do any conversions, copy to output
-                            for(int row = 0; row < height; row++)
+                            for(int row = 0; row < realMipHeight; row++)
                             {
-                                int numBytesRead = input.Read(scanline, 0, rowPitch);
-                                if(numBytesRead != rowPitch)
+                                int numBytesRead = input.Read(scanline, 0, srcRowPitch);
+                                if(numBytesRead != srcRowPitch)
                                 {
                                     errored = true;
+                                    System.Diagnostics.Debug.Assert(false);
                                     return null;
                                 }
 
-                                FormatConverter.CopyScanline(dPtr, rowPitch,)
+                                //Copy scanline, optionally convert data
+                                FormatConverter.CopyScanline(dPtr, dstRowPitch, scanlinePtr, srcRowPitch, format, convFlags, palette);
 
-                                dPtr = MemoryHelper.AddIntPtr(dPtr, rowPitch);
+                                //Increment dest pointer to next row
+                                dPtr = MemoryHelper.AddIntPtr(dPtr, dstRowPitch);
                             }
 
-                            //Advance stream to the next slice
-                            input.Position = slicePos + slicePitch;
-                            dstPtr = MemoryHelper.AddIntPtr(dstPtr, slicePitch);
+                            //Advance stream and destination pointer to the next slice
+                            input.Position = slicePos + srcSlicePitch;
+                            dstPtr = MemoryHelper.AddIntPtr(dstPtr, dstSlicePitch);
                         }
                     }
                 }
@@ -459,7 +483,13 @@ namespace TeximpNet.DDS
                 }
             }
 
-            return null;
+            if (mipChains.Count == 0 || mipChains[0].Count == 0)
+            {
+                System.Diagnostics.Debug.Assert(false);
+                return null;
+            }
+
+            return new DDSImage(mipChains, format, texDim);
         }
 
         private static bool ReadHeader(Stream input, StreamTransferBuffer buffer, out Header header, out Header10? headerExt)
