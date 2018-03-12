@@ -21,8 +21,9 @@
 */
 
 using System;
-using Xunit;
+using System.Collections.Generic;
 using TeximpNet.DDS;
+using Xunit;
 
 namespace TeximpNet.Test
 {
@@ -277,6 +278,29 @@ namespace TeximpNet.Test
             file = GetInputFile("DDS/bunny_Rgb565.dds");
             using (DDSImage image = DDSImage.Read(file))
                 AssertImage(image, DXGIFormat.B5G6R5_UNorm, TextureDimension.Two, false, true, true, false);
+        }
+
+        [Fact]
+        public void TestWriteFreeImage()
+        {
+            String file = GetInputFile("bunny.jpg");
+            Surface mip0 = Surface.LoadFromFile(file);
+
+            List<Surface> mipChain = new List<Surface>();
+            mip0.GenerateMipMaps(mipChain, ImageFilter.Lanczos3, true);
+
+            //Flip images, maybe have this as an option to the write method?
+            foreach (Surface s in mipChain)
+                s.FlipVertically();
+
+            String fileOut = GetOutputFile("bunny_freeImage_RGBA.dds");
+            Assert.True(DDSImage.Write(fileOut, mipChain, TextureDimension.Two, DDSFlags.ForceRgb));
+
+            fileOut = GetOutputFile("bunny_freeImage_BGRA.dds");
+            Assert.True(DDSImage.Write(fileOut, mipChain, TextureDimension.Two));
+
+            using (DDSImage image = DDSImage.Read(fileOut))
+                AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, false, false);
         }
 
         private static void AssertImage(DDSImage image, DXGIFormat format, TextureDimension texDim, bool hasArray, bool hasMips, bool hasHeight, bool hasDepth)

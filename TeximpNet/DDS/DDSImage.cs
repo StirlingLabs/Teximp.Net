@@ -115,74 +115,7 @@ namespace TeximpNet.DDS
         /// <returns>True if the image data is not correctly initialized, false if it passes some basic checks.</returns>
         public bool Validate()
         {
-            if(m_format == DXGIFormat.Unknown)
-                return false;
-
-            if(m_mipChains.Count == 0 || m_mipChains[0].Count == 0)
-                return false;
-
-            //Validate cubemap...must have multiples of 6 faces (can be an array of cubes).
-            if(m_dimension == TextureDimension.Cube && (m_mipChains.Count % 6) != 0)
-                return false;
-
-            //Validate 3d texture..can't have arrays
-            if(m_dimension == TextureDimension.Three && m_mipChains.Count > 1)
-                return false;
-
-            int width, height, depth, rowPitch, slicePitch;
-
-            //Save the first image dimensions
-            MipSurface firstSurface = m_mipChains[0][0];
-            width = firstSurface.Width;
-            height = firstSurface.Height;
-            depth = firstSurface.Depth;
-            rowPitch = firstSurface.RowPitch;
-            slicePitch = firstSurface.SlicePitch;
-
-            //Validate first surface
-            if(width < 1 || height < 1 || depth < 1 || rowPitch < 1 || slicePitch < 1)
-                return false;
-
-            //Go through each chain and validate against the first texture and ensure mipmaps are progressively smaller
-            int mipCount = -1;
-
-            for(int i = 0; i < m_mipChains.Count; i++)
-            {
-                MipChain mipmaps = m_mipChains[i];
-
-                //Mips must exist...
-                if(mipmaps == null || mipmaps.Count == 0)
-                    return false;
-
-                //Grab a mip count from first chain
-                if(mipCount == -1)
-                    mipCount = mipmaps.Count;
-
-                //Each chain must have the same number of mip surfaces
-                if(mipmaps.Count != mipCount)
-                    return false;
-
-                //Each mip surface must have data and check sizes
-                MipSurface prevMip = mipmaps[0];
-
-                //Check against the first main image we looked at earlier
-                if(prevMip.Width != width || prevMip.Height != height || prevMip.Depth != depth || prevMip.Data == IntPtr.Zero || prevMip.RowPitch != rowPitch || prevMip.SlicePitch != slicePitch)
-                    return false;
-
-                for(int mipLevel = 1; mipLevel < mipmaps.Count; mipLevel++)
-                {
-                    MipSurface nextMip = mipmaps[mipLevel];
-
-                    //Ensure each mipmap is progressively smaller at the least
-                    if(nextMip.Width > prevMip.Width || nextMip.Height > prevMip.Height || nextMip.Depth > prevMip.Depth || nextMip.Data == IntPtr.Zero 
-                        || nextMip.RowPitch > prevMip.RowPitch || nextMip.SlicePitch > prevMip.SlicePitch || nextMip.RowPitch == 0 || nextMip.SlicePitch == 0)
-                        return false;
-
-                    prevMip = nextMip;
-                }
-            }
-
-            return true;
+            return ValidateInternal(m_mipChains, m_format, m_dimension);
         }
 
         /// <summary>
@@ -214,10 +147,10 @@ namespace TeximpNet.DDS
         /// <returns>True if the file is DDS format, false if not. </returns>
         public static bool IsDDSFile(String fileName)
         {
-            if(!File.Exists(fileName))
+            if (!File.Exists(fileName))
                 return false;
 
-            using(FileStream fs = File.OpenRead(fileName))
+            using (FileStream fs = File.OpenRead(fileName))
                 return IsDDSFile(fs);
         }
 
@@ -229,11 +162,11 @@ namespace TeximpNet.DDS
         /// <returns>True if the file is DDS format, false if not. </returns>
         public static bool IsDDSFile(Stream input)
         {
-            if(input == null || !input.CanRead)
+            if (input == null || !input.CanRead)
                 return false;
 
-            long minSize = (long) (MemoryHelper.SizeOf<Header>() + FourCC.SizeInBytes);
-            if(!StreamHelper.CanReadBytes(input, minSize))
+            long minSize = (long)(MemoryHelper.SizeOf<Header>() + FourCC.SizeInBytes);
+            if (!StreamHelper.CanReadBytes(input, minSize))
                 return false;
 
             //Check magic word
@@ -254,10 +187,10 @@ namespace TeximpNet.DDS
         /// <returns>Loaded image data, or null if the data failed to load.</returns>
         public static DDSImage Read(String fileName, DDSFlags flags = DDSFlags.None)
         {
-            if(!File.Exists(fileName))
+            if (!File.Exists(fileName))
                 return null;
 
-            using(FileStream fs = File.OpenRead(fileName))
+            using (FileStream fs = File.OpenRead(fileName))
                 return Read(fs, flags);
         }
 
@@ -276,7 +209,7 @@ namespace TeximpNet.DDS
             Header10? headerExt;
 
             //Reads + validates header(s)
-            if(!ReadHeader(input, buffer, out header, out headerExt))
+            if (!ReadHeader(input, buffer, out header, out headerExt))
                 return null;
 
             //Gather up metadata 
@@ -286,32 +219,32 @@ namespace TeximpNet.DDS
             ConversionFlags convFlags = ConversionFlags.None;
             bool legacyDword = (flags & DDSFlags.LegacyDword) == DDSFlags.LegacyDword ? true : false;
 
-            int width = Math.Max((int) header.Width, 1);
-            int height = Math.Max((int) header.Height, 1);
-            int depth = Math.Max((int) header.Depth, 1);
-            int mipCount = (int) header.MipMapCount;
+            int width = Math.Max((int)header.Width, 1);
+            int height = Math.Max((int)header.Height, 1);
+            int depth = Math.Max((int)header.Depth, 1);
+            int mipCount = (int)header.MipMapCount;
             int arrayCount = 1;
 
             //Has extended header, a modern DDS
-            if(headerExt.HasValue)
+            if (headerExt.HasValue)
             {
                 Header10 extendedHeader = headerExt.Value;
-                arrayCount = (int) extendedHeader.ArraySize;
+                arrayCount = (int)extendedHeader.ArraySize;
                 format = extendedHeader.Format;
 
-                switch(extendedHeader.ResourceDimension)
+                switch (extendedHeader.ResourceDimension)
                 {
                     case D3D10ResourceDimension.Texture1D:
                         {
                             texDim = TextureDimension.One;
 
-                            if(height > 1 || depth > 1)
+                            if (height > 1 || depth > 1)
                                 return null;
                         }
                         break;
                     case D3D10ResourceDimension.Texture2D:
                         {
-                            if((extendedHeader.MiscFlags & Header10Flags.TextureCube) == Header10Flags.TextureCube)
+                            if ((extendedHeader.MiscFlags & Header10Flags.TextureCube) == Header10Flags.TextureCube)
                             {
                                 //Specifies # of cubemaps, so to get total # of faces must multiple by 6
                                 arrayCount *= 6;
@@ -323,7 +256,7 @@ namespace TeximpNet.DDS
                                 texDim = TextureDimension.Two;
                             }
 
-                            if(depth > 1)
+                            if (depth > 1)
                                 return null;
                         }
                         break;
@@ -331,7 +264,7 @@ namespace TeximpNet.DDS
                         {
                             texDim = TextureDimension.Three;
 
-                            if(arrayCount > 1 || (header.Caps2 & HeaderCaps2.Volume) != HeaderCaps2.Volume)
+                            if (arrayCount > 1 || (header.Caps2 & HeaderCaps2.Volume) != HeaderCaps2.Volume)
                                 return null;
                         }
                         break;
@@ -343,7 +276,7 @@ namespace TeximpNet.DDS
                 //Otherwise, read legacy DDS and possibly convert data
 
                 //Check volume flag
-                if((header.Caps2 & HeaderCaps2.Volume) == HeaderCaps2.Volume)
+                if ((header.Caps2 & HeaderCaps2.Volume) == HeaderCaps2.Volume)
                 {
                     texDim = TextureDimension.Three;
                 }
@@ -351,10 +284,10 @@ namespace TeximpNet.DDS
                 {
                     //legacy DDS could not express 1D textures, so either a cubemap or a 2D non-array texture
 
-                    if((header.Caps2 & HeaderCaps2.Cubemap) == HeaderCaps2.Cubemap)
+                    if ((header.Caps2 & HeaderCaps2.Cubemap) == HeaderCaps2.Cubemap)
                     {
                         //Must have all six faces. DirectX 8 and above always would write out all 6 faces
-                        if((header.Caps2 & HeaderCaps2.Cubemap_AllFaces) != HeaderCaps2.Cubemap_AllFaces)
+                        if ((header.Caps2 & HeaderCaps2.Cubemap_AllFaces) != HeaderCaps2.Cubemap_AllFaces)
                             return null;
 
                         arrayCount = 6;
@@ -374,13 +307,13 @@ namespace TeximpNet.DDS
 
             //If palette image, the palette will be the first thing
             int[] palette = null;
-            if(FormatConverter.HasConversionFlag(convFlags, ConversionFlags.Pal8))
+            if (FormatConverter.HasConversionFlag(convFlags, ConversionFlags.Pal8))
             {
                 palette = new int[256];
                 int palSize = palette.Length * sizeof(int);
                 buffer.ReadBytes(input, palSize);
 
-                if(buffer.LastReadByteCount != palSize)
+                if (buffer.LastReadByteCount != palSize)
                     return null;
 
                 MemoryHelper.CopyBytes<int>(buffer.ByteArray, 0, palette, 0, palette.Length);
@@ -398,13 +331,13 @@ namespace TeximpNet.DDS
             try
             {
                 //Iterate over each array face...
-                for(int i = 0; i < arrayCount; i++)
+                for (int i = 0; i < arrayCount; i++)
                 {
                     MipChain mipChain = new MipChain(mipCount);
                     mipChains.Add(mipChain);
 
                     //Iterate over each mip face...
-                    for(int mipLevel = 0; mipLevel < mipCount; mipLevel++)
+                    for (int mipLevel = 0; mipLevel < mipCount; mipLevel++)
                     {
                         //Calculate mip dimensions
                         int mipWidth = width;
@@ -417,15 +350,15 @@ namespace TeximpNet.DDS
                         //is a 4x4 region of pixels.
                         int realMipWidth, realMipHeight, dstRowPitch, dstSlicePitch, bytesPerPixel;
                         ImageHelper.ComputePitch(format, mipWidth, mipHeight, out dstRowPitch, out dstSlicePitch, out realMipWidth, out realMipHeight, out bytesPerPixel, legacyDword);
-     
+
                         int srcRowPitch = dstRowPitch;
                         int srcSlicePitch = dstSlicePitch;
 
                         //Are we converting from a legacy format, possibly?
-                        if(!headerExt.HasValue)
+                        if (!headerExt.HasValue)
                         {
                             int legacySize = FormatConverter.LegacyFormatBitsPerPixelFromConversionFlag(convFlags);
-                            if(legacySize != 0)
+                            if (legacySize != 0)
                             {
                                 srcRowPitch = (realMipWidth * legacySize + 7) / 8;
                                 srcSlicePitch = srcRowPitch * realMipHeight;
@@ -433,7 +366,7 @@ namespace TeximpNet.DDS
                         }
 
                         //If output data is requested not to have padding, recompute destination pitches
-                        if(noPadding)
+                        if (noPadding)
                         {
                             dstRowPitch = bytesPerPixel * realMipWidth;
                             dstSlicePitch = dstRowPitch * realMipHeight;
@@ -445,22 +378,22 @@ namespace TeximpNet.DDS
                         mipChain.Add(mipSurface);
 
                         //Ensure read buffer is sufficiently sized for a single scanline
-                        if(buffer.Length < srcRowPitch)
+                        if (buffer.Length < srcRowPitch)
                             buffer.Resize(srcRowPitch, false);
 
                         IntPtr dstPtr = data;
 
                         //Advance stream one slice at a time...
-                        for(int slice = 0; slice < mipDepth; slice++)
+                        for (int slice = 0; slice < mipDepth; slice++)
                         {
                             long slicePos = input.Position;
                             IntPtr dPtr = dstPtr;
 
                             //Copy scanline into temp buffer, do any conversions, copy to output
-                            for(int row = 0; row < realMipHeight; row++)
+                            for (int row = 0; row < realMipHeight; row++)
                             {
                                 int numBytesRead = input.Read(scanline, 0, srcRowPitch);
-                                if(numBytesRead != srcRowPitch)
+                                if (numBytesRead != srcRowPitch)
                                 {
                                     errored = true;
                                     System.Diagnostics.Debug.Assert(false);
@@ -484,23 +417,164 @@ namespace TeximpNet.DDS
             finally
             {
                 //If errored, clean up any mip surfaces we allocated...no null entries should have been made either
-                if(errored)
-                {
-                    foreach(MipChain chain in mipChains)
-                    {
-                        foreach(MipSurface surface in chain)
-                            surface.Dispose();
-                    }
-                }
+                if (errored)
+                    DisposeMipChains(mipChains);
             }
 
-            if (mipChains.Count == 0 || mipChains[0].Count == 0)
+            if (!ValidateInternal(mipChains, format, texDim))
             {
                 System.Diagnostics.Debug.Assert(false);
                 return null;
             }
 
             return new DDSImage(mipChains, format, texDim);
+        }
+
+        public static bool Write(String fileName, Surface image, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            if (!Directory.Exists(Path.GetDirectoryName(fileName)))
+                Directory.CreateDirectory(Path.GetDirectoryName(fileName));
+
+            using (FileStream fs = File.Create(fileName))
+                return Write(fs, image, texDim, flags);
+        }
+
+        public static bool Write(String fileName, List<Surface> mipChain, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            if (!Directory.Exists(Path.GetDirectoryName(fileName)))
+                Directory.CreateDirectory(Path.GetDirectoryName(fileName));
+
+            using (FileStream fs = File.Create(fileName))
+                return Write(fs, mipChain, texDim, flags);
+        }
+
+        public static bool Write(String fileName, List<List<Surface>> mipChains, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            if (!Directory.Exists(Path.GetDirectoryName(fileName)))
+                Directory.CreateDirectory(Path.GetDirectoryName(fileName));
+
+            using (FileStream fs = File.Create(fileName))
+                return Write(fs, mipChains, texDim, flags);
+        }
+
+        public static bool Write(Stream output, Surface image, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            List<Surface> mipChain = new List<Surface>(1);
+            mipChain.Add(image);
+            List<List<Surface>> mipChains = new List<List<Surface>>(1);
+            mipChains.Add(mipChain);
+
+            return Write(output, mipChains, texDim, flags);
+        }
+
+        public static bool Write(Stream output, List<Surface> mipChain, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            List<List<Surface>> mipChains = new List<List<Surface>>(1);
+            mipChains.Add(mipChain);
+
+            return Write(output, mipChains, texDim, flags);
+        }
+
+        public static bool Write(Stream output, List<List<Surface>> mipChains, TextureDimension texDim, DDSFlags flags = DDSFlags.None)
+        {
+            if (mipChains == null || mipChains.Count == 0 || mipChains[0] == null || mipChains[0].Count == 0)
+                return false;
+
+            //FreeImage doesn't support volume textures.
+            if (texDim == TextureDimension.Three)
+                return false;
+
+            //If texcube, must have multiples of 6, every 6 mipchains are a complete cubemap
+            if (texDim == TextureDimension.Cube && (mipChains.Count % 6 != 0))
+                return false;
+
+            //FreeImage surfaces are always uncompressed and we expect 32-bit color, if not we'll convert. We'll export in whatever color order freeimage is in,
+            //but we can force RGBA based on the flags
+            List<MipChain> ddsMipChains = new List<MipChain>(mipChains.Count);
+
+            bool forceRGBA = (flags & DDSFlags.ForceRgb) == DDSFlags.ForceRgb;
+            bool isBGRAOrder = Surface.IsBGRAOrder;
+            bool needToSwizzle = isBGRAOrder && forceRGBA;
+            DXGIFormat format = (isBGRAOrder) ? DXGIFormat.B8G8R8A8_UNorm : DXGIFormat.R8G8B8A8_UNorm;
+
+            if (forceRGBA)
+                format = DXGIFormat.R8G8B8A8_UNorm;
+
+            try
+            {
+                int mipCount = -1;
+
+                foreach (List<Surface> fiMipChain in mipChains)
+                {
+                    MipChain ddsMipChain = new MipChain(fiMipChain.Count);
+                    ddsMipChains.Add(ddsMipChain);
+
+                    if (mipCount == -1)
+                        mipCount = fiMipChain.Count;
+
+                    //All chains must have same # of mips
+                    if (mipCount != fiMipChain.Count)
+                        return false;
+
+                    foreach(Surface fiMip in fiMipChain)
+                    {
+                        if (fiMip == null)
+                            return false;
+
+                        //Validate dimension
+                        switch(texDim)
+                        {
+                            case TextureDimension.One:
+                                if (fiMip.Height > 1)
+                                    return false;
+                                break;
+                            case TextureDimension.Cube:
+                                if (fiMip.Width != fiMip.Height)
+                                    return false;
+                                break;
+                        }
+
+                        bool is32BitBitmap = fiMip.ImageType == ImageType.Bitmap && fiMip.ColorType == ImageColorType.RGBA && fiMip.BitsPerPixel == 32;
+
+                        if(is32BitBitmap)
+                        {
+                            //If no swizzling...just use the data directly
+                            if(!needToSwizzle)
+                            {
+                                ddsMipChain.Add(new MipSurface(fiMip.Width, fiMip.Height, fiMip.Pitch, fiMip.DataPtr, false));
+                            }
+                            else
+                            {
+                                MipSurface newMip = new MipSurface(fiMip.Width, fiMip.Height, fiMip.Pitch, MemoryHelper.AllocateMemory(fiMip.Height * fiMip.Pitch));
+                                ImageHelper.CopyColorImageData(newMip.Data, newMip.RowPitch, 0, fiMip.DataPtr, fiMip.Pitch, 0, newMip.Width, newMip.Height, 1, true);
+                                ddsMipChain.Add(newMip);
+                            }
+                        }
+                        else
+                        {
+                            //Need to convert. Possible to map other DXGI formats to free image bitmaps (most likely RGBA floats), but we're keeping it simple. User can wrap surfaces
+                            //and use the general write method
+                            using (Surface converted = fiMip.Clone())
+                            {
+                                if (!converted.ConvertTo(ImageConversion.To32Bits))
+                                    return false;
+
+                                MipSurface newMip = new MipSurface(converted.Width, converted.Height, converted.Pitch, MemoryHelper.AllocateMemory(converted.Height * converted.Pitch));
+                                ImageHelper.CopyColorImageData(newMip.Data, newMip.RowPitch, 0, converted.DataPtr, converted.Pitch, 0, newMip.Width, newMip.Height, 1, needToSwizzle);
+                                ddsMipChain.Add(newMip);
+                            }
+                        }
+                    }
+                }
+
+                //Write out DDS
+                return Write(output, ddsMipChains, format, texDim, flags);
+            }
+            finally
+            {
+                //Dispose of mip surfaces. If they own any data, it'll be cleaned up
+                DisposeMipChains(ddsMipChains);
+            }
         }
 
         /// <summary>
@@ -546,30 +620,11 @@ namespace TeximpNet.DDS
             arrayCount = mipChains.Count;
             mipCount = mipChains[0].Count;
 
-            int maxPitch = 0;
-
-            //Validate all the surfaces are valid
-            foreach(MipChain mipChain in mipChains)
-            {
-                if(mipChain == null || mipChain.Count != mipCount)
-                    return false;
-
-                //Ensure first matches extracted details
-                MipSurface mip0 = mipChain[0];
-                if(mip0.Width != width || mip0.Height != height || mip0.Depth != depth)
-                    return false;
-
-                foreach(MipSurface mip in mipChain)
-                {
-                    if(mip == null || mip.Data == IntPtr.Zero)
-                        return false;
-
-                    maxPitch = Math.Max(mip.RowPitch, maxPitch);
-                }
-            }
+            if (!ValidateInternal(mipChains, format, texDim))
+                return false;
 
             //Setup a transfer buffer
-            StreamTransferBuffer buffer = new StreamTransferBuffer(maxPitch, false);
+            StreamTransferBuffer buffer = new StreamTransferBuffer(firstMip.RowPitch, false);
 
             //Write out header
             if(!WriteHeader(output, buffer, texDim, format, width, height, depth, arrayCount, mipCount, flags))
@@ -930,6 +985,111 @@ namespace TeximpNet.DDS
                 }
 
                 m_isDisposed = true;
+            }
+        }
+
+        private static bool ValidateInternal(List<MipChain> mipChains, DXGIFormat format, TextureDimension texDim)
+        {
+            if (format == DXGIFormat.Unknown)
+                return false;
+
+            //Mipchains must exist, must have at least one, and chain must have mipmaps.
+            if (mipChains == null || mipChains.Count == 0 || mipChains[0].Count == 0)
+                return false;
+
+            //Validate cubemap...must have multiples of 6 faces (can be an array of cubes).
+            if (texDim == TextureDimension.Cube && (mipChains.Count % 6) != 0)
+                return false;
+
+            //Validate 3d texture..can't have arrays
+            if (texDim == TextureDimension.Three && mipChains.Count > 1)
+                return false;
+
+            int width, height, depth, rowPitch, slicePitch;
+
+            //Save the first image dimensions
+            MipSurface firstSurface = mipChains[0][0];
+            width = firstSurface.Width;
+            height = firstSurface.Height;
+            depth = firstSurface.Depth;
+            rowPitch = firstSurface.RowPitch;
+            slicePitch = firstSurface.SlicePitch;
+
+            //Validate first surface
+            if (width < 1 || height < 1 || depth < 1 || rowPitch < 1 || slicePitch < 1)
+                return false;
+
+            //Validate 1D texture...must only have 1 height
+            if (texDim == TextureDimension.One && height > 1)
+                return false;
+
+            //Validate cubemap...width/height must be same
+            if (texDim == TextureDimension.Cube && (width != height))
+                return false;
+
+            //Only 3d textures have depth
+            if (texDim != TextureDimension.Three && depth > 1)
+                return false;
+
+            //Go through each chain and validate against the first texture and ensure mipmaps are progressively smaller
+            int mipCount = -1;
+
+            for (int i = 0; i < mipChains.Count; i++)
+            {
+                MipChain mipmaps = mipChains[i];
+
+                //Mips must exist...
+                if (mipmaps == null || mipmaps.Count == 0)
+                    return false;
+
+                //Grab a mip count from first chain
+                if (mipCount == -1)
+                    mipCount = mipmaps.Count;
+
+                //Each chain must have the same number of mip surfaces
+                if (mipmaps.Count != mipCount)
+                    return false;
+
+                //Each mip surface must have data and check sizes
+                MipSurface prevMip = mipmaps[0];
+
+                //Check against the first main image we looked at earlier
+                if (prevMip.Width != width || prevMip.Height != height || prevMip.Depth != depth || prevMip.Data == IntPtr.Zero || prevMip.RowPitch != rowPitch || prevMip.SlicePitch != slicePitch)
+                    return false;
+
+                for (int mipLevel = 1; mipLevel < mipmaps.Count; mipLevel++)
+                {
+                    MipSurface nextMip = mipmaps[mipLevel];
+
+                    //Ensure each mipmap is progressively smaller or same at the least
+                    if (nextMip.Width > prevMip.Width || nextMip.Height > prevMip.Height || nextMip.Depth > prevMip.Depth || nextMip.Data == IntPtr.Zero
+                        || nextMip.RowPitch > prevMip.RowPitch || nextMip.SlicePitch > prevMip.SlicePitch || nextMip.RowPitch == 0 || nextMip.SlicePitch == 0)
+                        return false;
+
+                    prevMip = nextMip;
+                }
+            }
+
+            return true;
+        }
+
+        private static void DisposeMipChains(List<MipChain> mipChains)
+        {
+            if (mipChains == null)
+                return;
+
+            foreach (MipChain chain in mipChains)
+            {
+                if (chain == null)
+                    continue;
+
+                foreach (MipSurface surface in chain)
+                {
+                    if (surface == null)
+                        continue;
+
+                    surface.Dispose();
+                }
             }
         }
     }
