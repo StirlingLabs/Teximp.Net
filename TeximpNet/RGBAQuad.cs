@@ -20,6 +20,7 @@
 * THE SOFTWARE.
 */
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace TeximpNet
@@ -82,6 +83,15 @@ namespace TeximpNet
         {
             color = new BGRAQuad(B, G, R, A);
         }
+
+        /// <summary>
+        /// Returns the fully qualified type name of this instance.
+        /// </summary>
+        /// <returns>A <see cref="T:System.String" /> containing a fully qualified type name.</returns>
+        public override String ToString()
+        {
+            return String.Format("R: {0}, G: {1}, B: {2}, A: {3}", R, G, B, A);
+        }
     }
 
     /// <summary>
@@ -140,6 +150,15 @@ namespace TeximpNet
         public void ToRGBA(out RGBAQuad color)
         {
             color = new RGBAQuad(R, G, B, A);
+        }
+
+        /// <summary>
+        /// Returns the fully qualified type name of this instance.
+        /// </summary>
+        /// <returns>A <see cref="T:System.String" /> containing a fully qualified type name.</returns>
+        public override String ToString()
+        {
+            return String.Format("B: {0}, G: {1}, R: {2}, A: {3}", B, G, R, A);
         }
     }
 }

@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using TeximpNet.Compression;
+using TeximpNet.DDS;
 using Xunit;
 
 namespace TeximpNet.Test
@@ -52,13 +53,19 @@ namespace TeximpNet.Test
             Assert.True(compressor.Process(outputFile));
 
             //Also process to list of mipmaps
-            List<CompressedImageData> images = new List<CompressedImageData>();
+            DDSContainer ddsContainer;
 
-            Assert.True(compressor.Process(images));
-            Assert.True(images.Count == compressor.Input.MipmapCount);
+            Assert.True(compressor.Process(out ddsContainer));
+            Assert.NotNull(ddsContainer);
+            Assert.True(ddsContainer.MipChains.Count == 1);
 
-            foreach (CompressedImageData image in images)
-                Assert.NotNull(image);
+            foreach(DDS.MipChain mips in ddsContainer.MipChains)
+            {
+                Assert.True(mips.Count == compressor.Input.MipmapCount);
+
+                foreach(DDS.MipData mip in mips)
+                    Assert.NotNull(mip);
+            }
         }
 
         [Fact]
@@ -137,9 +144,18 @@ namespace TeximpNet.Test
             Assert.True(compressor.Process(outputFile));
 
             //Look at compressed image processing too
-            List<CompressedImageData> images = new List<CompressedImageData>();
-            Assert.True(compressor.Process(images));
-            Assert.True(images.Count == compressor.Input.MipmapCount * 6);
+            DDSContainer ddsContainer;
+            Assert.True(compressor.Process(out ddsContainer));
+            Assert.NotNull(ddsContainer);
+            Assert.True(ddsContainer.MipChains.Count == 6);
+
+            foreach(MipChain mips in ddsContainer.MipChains)
+            {
+                Assert.True(mips.Count == compressor.Input.MipmapCount);
+
+                foreach(MipData mip in mips)
+                    Assert.NotNull(mip);
+            }
         }
 
         [Fact]
@@ -187,13 +203,19 @@ namespace TeximpNet.Test
                 Assert.True(compressor.Process(outputFile));
 
                 //Also process to list of mipmaps
-                List<CompressedImageData> images = new List<CompressedImageData>();
+                DDSContainer ddsContainer;
 
-                Assert.True(compressor.Process(images));
-                Assert.True(images.Count == compressor.Input.MipmapCount);
+                Assert.True(compressor.Process(out ddsContainer));
+                Assert.NotNull(ddsContainer);
+                Assert.True(ddsContainer.MipChains.Count == 1);
 
-                foreach (CompressedImageData image in images)
-                    Assert.NotNull(image);
+                foreach(MipChain mips in ddsContainer.MipChains)
+                {
+                    Assert.True(mips.Count == compressor.Input.MipmapCount);
+
+                    foreach(MipData mip in mips)
+                        Assert.NotNull(mip);
+                }
             }
             finally
             {
@@ -222,17 +244,19 @@ namespace TeximpNet.Test
                 compressor.Compression.SetRGBAPixelFormat();
                 compressor.Compression.Format = CompressionFormat.BGRA;
 
-                List<CompressedImageData> images = new List<CompressedImageData>();
-                Assert.True(compressor.Process(images));
-                Assert.True(images.Count == compressor.Input.MipmapCount);
+                DDSContainer ddsContainer;
+
+                Assert.True(compressor.Process(out ddsContainer));
+                Assert.NotNull(ddsContainer);
+                Assert.True(ddsContainer.MipChains.Count == 1 && ddsContainer.MipChains[0].Count == compressor.Input.MipmapCount);
 
                 //First image should be the same...
-                CompressedImageData mip0 = images[0];
+                MipData mip0 = ddsContainer.MipChains[0][0];
                 Assert.True(mip0.Width == width);
                 Assert.True(mip0.Height == height);
 
                 RGBAQuad[] processedData = new RGBAQuad[25];
-                MemoryHelper.Read<RGBAQuad>(mip0.DataPtr, processedData, 0, processedData.Length);
+                MemoryHelper.Read<RGBAQuad>(mip0.Data, processedData, 0, processedData.Length);
 
                 for(int i = 0; i < data.Length; i++)
                 {
@@ -249,6 +273,65 @@ namespace TeximpNet.Test
             {
                 MemoryHelper.PinObject(data);
             }
+        }
+
+        [Fact]
+        public void TestSetMipData()
+        {
+            RGBAQuad[] dataRGBA = new RGBAQuad[25];
+            BGRAQuad[] dataBGRA = new BGRAQuad[25];
+            int width = 5;
+            int height = 5;
+
+            for(int i = 0; i < width * height; i++)
+            {
+                dataRGBA[i] = new RGBAQuad(200, 5, 100, 255);
+                dataBGRA[i] = new BGRAQuad(100, 5, 200, 255);
+            }
+
+            IntPtr dataRGBAPtr = MemoryHelper.PinObject(dataRGBA);
+            IntPtr dataBGRAPtr = MemoryHelper.PinObject(dataBGRA);
+
+            MipData rgbaMip = new MipData(width, height, width * 4, dataRGBAPtr, false);
+            MipData bgraMip = new MipData(width, height, width * 4, dataBGRAPtr, false);
+
+            Compressor compressor = new Compressor();
+            compressor.Input.GenerateMipmaps = true;
+            compressor.Input.SetData(bgraMip, true);
+            compressor.Compression.SetBGRAPixelFormat();
+            compressor.Compression.Format = CompressionFormat.BGRA;
+
+            DDSContainer outputImage1;
+            compressor.Process(out outputImage1);
+
+            //Check bgra
+            for(int i = 0, offset = 0; i < width * height; i++, offset += 4)
+            {
+                IntPtr outputPtr = outputImage1.MipChains[0][0].Data;
+                BGRAQuad v1 = MemoryHelper.Read<BGRAQuad>(MemoryHelper.AddIntPtr(outputPtr, offset));
+                BGRAQuad v2 = dataBGRA[i];
+
+                Assert.True(v1.R == v2.R && v1.G == v2.G && v1.B == v2.B && v1.A == v2.A);
+            }
+
+            compressor.Input.SetData(rgbaMip, false);
+            compressor.Compression.SetRGBAPixelFormat();
+
+            DDSContainer outputImage2;
+            compressor.Process(out outputImage2);
+
+            //Check rgba
+            for(int i = 0, offset = 0; i < width * height; i++, offset += 4)
+            {
+                IntPtr outputPtr = outputImage2.MipChains[0][0].Data;
+                RGBAQuad v1 = MemoryHelper.Read<RGBAQuad>(MemoryHelper.AddIntPtr(outputPtr, offset));
+                RGBAQuad v2 = dataRGBA[i];
+
+                Assert.True(v1.R == v2.R && v1.G == v2.G && v1.B == v2.B && v1.A == v2.A);
+            }
+
+            MemoryHelper.UnpinObject(dataRGBA);
+            MemoryHelper.UnpinObject(dataBGRA);
         }
     }
 }

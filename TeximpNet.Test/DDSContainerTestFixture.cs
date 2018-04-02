@@ -27,17 +27,17 @@ using Xunit;
 
 namespace TeximpNet.Test
 {
-    public class DDSImageTestFixture : TeximpTestFixture
+    public class DDSContainerTestFixture : TeximpTestFixture
     {
         [Fact]
         public void TestLoadCompressed()
         {
             String file = GetInputFile("DDS/bunny_DXT1.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
 
             file = GetInputFile("DDS/bunny_DXT5_NoMips.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.BC3_UNorm, TextureDimension.Two, false, false, true, false);
         }
 
@@ -47,14 +47,14 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/bunny_DXT1.dds");
             String fileOut = GetOutputFile("bunny_DXT1.dds");
 
-            using(DDSImage image = DDSImage.Read(file))
+            using(DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
 
                 Assert.True(image.Write(fileOut));
             }
 
-            using(DDSImage image = DDSImage.Read(fileOut))
+            using(DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
         }
 
@@ -64,14 +64,14 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/bunny_DXT1.dds");
             String fileOut = GetOutputFile("bunny_DXT1_DX10.dds");
 
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
 
                 Assert.True(image.Write(fileOut, DDSFlags.ForceExtendedHeader));
             }
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Two, false, true, true, false);
         }
 
@@ -80,19 +80,19 @@ namespace TeximpNet.Test
         {
             //no 24bpp DXGI, so convert to RGBA, also swizzles it automatically
             String file = GetInputFile("DDS/bunny_BGR.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.R8G8B8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
             file = GetInputFile("DDS/bunny_BGRA.dds");
-            using (DDSImage image = DDSImage.Read(file, DDSFlags.ForceRgb))
+            using (DDSContainer image = DDSFile.Read(file, DDSFlags.ForceRgb))
                 AssertImage(image, DXGIFormat.R8G8B8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
             file = GetInputFile("DDS/bunny_BGRA.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
             file = GetInputFile("DDS/bunny_RgbaFloat.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.R32G32B32A32_Float, TextureDimension.Two, false, true, true, false);
         }
 
@@ -102,11 +102,11 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/bunny_BGRA.dds");
             String fileOut = GetOutputFile("bunny_BGRA.bmp");
 
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
-                MipSurface mip0 = image.MipChains[0][0];
+                MipData mip0 = image.MipChains[0][0];
                 Surface s = Surface.LoadFromRawData(mip0.Data, mip0.Width, mip0.Height, mip0.RowPitch, true, true);
                 Assert.True(s.SaveToFile(ImageFormat.BMP, fileOut));
             }
@@ -118,14 +118,14 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/bunny_BGRA.dds");
             String fileOut = GetOutputFile("bunny_BGRA.dds");
 
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
                 Assert.True(image.Write(fileOut));
             }
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
         }
 
@@ -135,14 +135,14 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/bunny_BGRA.dds");
             String fileOut = GetOutputFile("bunny_BGRA_DX10.dds");
 
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
                 Assert.True(image.Write(fileOut, DDSFlags.ForceExtendedHeader));
             }
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
         }
 
@@ -150,7 +150,7 @@ namespace TeximpNet.Test
         public void TestLoadCubemap()
         {
             String file = GetInputFile("DDS/Cubemap.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
         }
 
@@ -160,14 +160,14 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/Cubemap.dds");
             String fileOut = GetOutputFile("Cubemap.dds");
 
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
 
                 Assert.True(image.Write(fileOut));
             }
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
         }
 
@@ -177,14 +177,14 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/Cubemap.dds");
             String fileOut = GetOutputFile("Cubemap_DX10.dds");
 
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
 
                 Assert.True(image.Write(fileOut, DDSFlags.ForceExtendedHeader));
             }
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Cube, false, true, true, false);
         }
 
@@ -194,11 +194,11 @@ namespace TeximpNet.Test
             String file = GetInputFile("DDS/bunny_BGRA_DX10.dds");
             String fileOut = GetOutputFile("bunny_BGRA_DX10.bmp");
 
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
-                MipSurface mip0 = image.MipChains[0][0];
+                MipData mip0 = image.MipChains[0][0];
                 Surface s = Surface.LoadFromRawData(mip0.Data, mip0.Width, mip0.Height, mip0.RowPitch, true, true);
                 Assert.True(s.SaveToFile(ImageFormat.BMP, fileOut));
             }
@@ -208,15 +208,15 @@ namespace TeximpNet.Test
         public void TestLoadVolume()
         {
            String file = GetInputFile("DDS/Volume_BGRA.dds");
-           using (DDSImage image = DDSImage.Read(file, DDSFlags.ForceRgb))
+           using (DDSContainer image = DDSFile.Read(file, DDSFlags.ForceRgb))
                 AssertImage(image, DXGIFormat.R8G8B8A8_UNorm, TextureDimension.Three, false, true, true, true);
 
             file = GetInputFile("DDS/Volume_BGRA.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
             
             file = GetInputFile("DDS/Volume_DXT1.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.BC1_UNorm, TextureDimension.Three, false, true, true, true);
         }
 
@@ -225,14 +225,14 @@ namespace TeximpNet.Test
         {
             String file = GetInputFile("DDS/Volume_BGRA.dds");
             String fileOut = GetOutputFile("Volume_BGRA.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
 
                 Assert.True(image.Write(fileOut));
             }
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
         }
 
@@ -241,14 +241,14 @@ namespace TeximpNet.Test
         {
             String file = GetInputFile("DDS/Volume_BGRA.dds");
             String fileOut = GetOutputFile("Volume_BGRA_DX10.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
             {
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
 
                 Assert.True(image.Write(fileOut));
             }
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Three, false, true, true, true);
         }
 
@@ -256,15 +256,15 @@ namespace TeximpNet.Test
         public void TestLoadLegacyFormats()
         {
             String file = GetInputFile("DDS/bunny_Luminance.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.R8_UNorm, TextureDimension.Two, false, true, true, false);
 
             file = GetInputFile("DDS/bunny_Palette.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.R8G8B8A8_UNorm, TextureDimension.Two, false, true, true, false);
 
             file = GetInputFile("DDS/bunny_PaletteAlpha.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.R8G8B8A8_UNorm, TextureDimension.Two, false, true, true, false);
         }
 
@@ -272,11 +272,11 @@ namespace TeximpNet.Test
         public void TestLoad16BitRGBA()
         {
             String file = GetInputFile("DDS/bunny_Rgba4444.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.B4G4R4A4_UNorm, TextureDimension.Two, false, true, true, false);
 
             file = GetInputFile("DDS/bunny_Rgb565.dds");
-            using (DDSImage image = DDSImage.Read(file))
+            using (DDSContainer image = DDSFile.Read(file))
                 AssertImage(image, DXGIFormat.B5G6R5_UNorm, TextureDimension.Two, false, true, true, false);
         }
 
@@ -294,16 +294,16 @@ namespace TeximpNet.Test
                 s.FlipVertically();
 
             String fileOut = GetOutputFile("bunny_freeImage_RGBA.dds");
-            Assert.True(DDSImage.Write(fileOut, mipChain, TextureDimension.Two, DDSFlags.ForceRgb));
+            Assert.True(DDSFile.Write(fileOut, mipChain, TextureDimension.Two, DDSFlags.ForceRgb));
 
             fileOut = GetOutputFile("bunny_freeImage_BGRA.dds");
-            Assert.True(DDSImage.Write(fileOut, mipChain, TextureDimension.Two));
+            Assert.True(DDSFile.Write(fileOut, mipChain, TextureDimension.Two));
 
-            using (DDSImage image = DDSImage.Read(fileOut))
+            using (DDSContainer image = DDSFile.Read(fileOut))
                 AssertImage(image, DXGIFormat.B8G8R8A8_UNorm, TextureDimension.Two, false, true, false, false);
         }
 
-        private static void AssertImage(DDSImage image, DXGIFormat format, TextureDimension texDim, bool hasArray, bool hasMips, bool hasHeight, bool hasDepth)
+        private static void AssertImage(DDSContainer image, DXGIFormat format, TextureDimension texDim, bool hasArray, bool hasMips, bool hasHeight, bool hasDepth)
         {
             Assert.NotNull(image);
             Assert.True(image.Format == format);
@@ -330,7 +330,7 @@ namespace TeximpNet.Test
                 //which should be the default
                 bool checkHeight = hasHeight;
                 bool checkDepth = hasDepth;
-                foreach(MipSurface surface in mips)
+                foreach(MipData surface in mips)
                 {
                     Assert.NotNull(surface);
                     Assert.True(surface.Data != IntPtr.Zero);

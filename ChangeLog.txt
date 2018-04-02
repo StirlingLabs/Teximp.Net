@@ -4,7 +4,8 @@ CHANGELOG
 
 1.3 (3/3/2018)
 
-	- Added DDS File read/write support (via DDSContainer).
+	- Added DDS File read/write support (DDSFile / DDSContainer).
+	- Removed CompressedImageData in favor of DDSContainer / MipData (consolidated the APIs)
 	- Updated to C# 7.2 compiler (generated assemblies are backwards compatible)
 	- Minor changes to some helpers:
 		- Moved a bunch of image-related routines out of MemoryHelper into a new static class called ImageHelper, these are mostly used internally but are public APIs

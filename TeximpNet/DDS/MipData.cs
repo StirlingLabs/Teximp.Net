@@ -30,7 +30,7 @@ namespace TeximpNet.DDS
     /// Represents a collection of mipmap surfaces. A valid texture always has at least one surface. The first surface is the largest image, and each subsequent mipmap
     /// is a scaled down texture by a factor of 2.
     /// </summary>
-    public sealed class MipChain : List<MipSurface>
+    public sealed class MipChain : List<MipData>
     {
         /// <summary>
         /// Constructs a new <see cref="MipChain"/>.
@@ -47,15 +47,15 @@ namespace TeximpNet.DDS
         /// Constructs a new <see cref="MipChain"/>.
         /// </summary>
         /// <param name="surfaces">Collection of images to add to this collection.</param>
-        public MipChain(IEnumerable<MipSurface> surfaces) : base(surfaces) { }
+        public MipChain(IEnumerable<MipData> surfaces) : base(surfaces) { }
     }
 
     /// <summary>
-    /// Represents a single image.
+    /// Represents mipmap data for a single image in a mipchain. The image data may be a 1D, 2D, or 3D image.
     /// </summary>
     /// <seealso cref="System.IDisposable" />
     [DebuggerDisplay("Width = {Width}, Height = {Height}, Depth = {Depth}, RowPitch = {RowPitch}, SlicePitch = {SlicePitch}, SizeInBytes = {SizeInBytes}, OwnsData = {OwnsData}")]
-    public sealed class MipSurface : IDisposable
+    public sealed class MipData : IDisposable
     {
         private bool m_isDisposed;
         private bool m_ownData;
@@ -113,17 +113,15 @@ namespace TeximpNet.DDS
         }
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="MipSurface"/> class. Represents a 1D image.
+        /// Constructs a new instance of the <see cref="MipData"/> class. Represents a 1D image.
         /// </summary>
         /// <param name="width">Width of the image, in texels.</param>
         /// <param name="rowPitch">Row pitch.</param>
         /// <param name="data">Pointer to image data.</param>
         /// <param name="ownData">If true, the pointer will be cleaned up by this object, if false then it is assumed to be managed externally.</param>
-        public MipSurface(int width, int rowPitch, IntPtr data, bool ownData = true)
+        public MipData(int width, int rowPitch, IntPtr data, bool ownData = true)
         {
             m_isDisposed = false;
-            m_ownData = ownData;
-            Data = data;
 
             Width = width;
             Height = 1;
@@ -131,21 +129,46 @@ namespace TeximpNet.DDS
 
             RowPitch = rowPitch;
             SlicePitch = rowPitch;
+
+            m_ownData = ownData;
+            Data = data;
+
+            if(ownData)
+                AddGCMemoryPressure();
         }
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="MipSurface"/> class. Represents a 2D image.
+        /// Constructs a new instance of the <see cref="MipData"/> class. Represents a 1D image. This allocates the owned memory.
+        /// </summary>
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="rowPitch">Row pitch.</param>
+        public MipData(int width, int rowPitch)
+        {
+            m_isDisposed = false;
+
+            Width = width;
+            Height = 1;
+            Depth = 1;
+
+            RowPitch = rowPitch;
+            SlicePitch = rowPitch;
+
+            m_ownData = true;
+            Data = MemoryHelper.AllocateMemory(SizeInBytes);
+            AddGCMemoryPressure();
+        }
+
+        /// <summary>
+        /// Constructs a new instance of the <see cref="MipData"/> class. Represents a 2D image.
         /// </summary>
         /// <param name="width">Width of the image, in texels.</param>
         /// <param name="height">Height of the image, in texels.</param>
         /// <param name="rowPitch">Row pitch.</param>
         /// <param name="data">Pointer to image data.</param>
         /// <param name="ownData">If true, the pointer will be cleaned up by this object, if false then it is assumed to be managed externally.</param>
-        public MipSurface(int width, int height, int rowPitch, IntPtr data, bool ownData = true)
+        public MipData(int width, int height, int rowPitch, IntPtr data, bool ownData = true)
         {
             m_isDisposed = false;
-            m_ownData = ownData;
-            Data = data;
 
             Width = width;
             Height = height;
@@ -153,10 +176,38 @@ namespace TeximpNet.DDS
 
             RowPitch = rowPitch;
             SlicePitch = rowPitch * height;
+
+            m_ownData = ownData;
+            Data = data;
+
+            if(ownData)
+                AddGCMemoryPressure();
         }
 
         /// <summary>
-        /// Constructs a new instance of the <see cref="MipSurface"/> class.
+        /// Constructs a new instance of the <see cref="MipData"/> class. Represents a 2D image. This allocates the owned memory.
+        /// </summary>
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="height">Height of the image, in texels.</param>
+        /// <param name="rowPitch">Row pitch.</param>
+        public MipData(int width, int height, int rowPitch)
+        {
+            m_isDisposed = false;
+
+            Width = width;
+            Height = height;
+            Depth = 1;
+
+            RowPitch = rowPitch;
+            SlicePitch = rowPitch * height;
+
+            m_ownData = true;
+            Data = MemoryHelper.AllocateMemory(SizeInBytes);
+            AddGCMemoryPressure();
+        }
+
+        /// <summary>
+        /// Constructs a new instance of the <see cref="MipData"/> class. Represents a 3D image. 
         /// </summary>
         /// <param name="width">Width of the image, in texels.</param>
         /// <param name="height">Height of the image, in texels.</param>
@@ -165,11 +216,9 @@ namespace TeximpNet.DDS
         /// <param name="slicePitch">Slice pitch.</param>
         /// <param name="data">Pointer to image data.</param>
         /// <param name="ownData">If true, the pointer will be cleaned up by this object, if false then it is assumed to be managed externally.</param>
-        public MipSurface(int width, int height, int depth, int rowPitch, int slicePitch, IntPtr data, bool ownData = true)
+        public MipData(int width, int height, int depth, int rowPitch, int slicePitch, IntPtr data, bool ownData = true)
         {
             m_isDisposed = false;
-            m_ownData = ownData;
-            Data = data;
 
             Width = width;
             Height = height;
@@ -177,12 +226,80 @@ namespace TeximpNet.DDS
 
             RowPitch = rowPitch;
             SlicePitch = slicePitch;
+
+            m_ownData = ownData;
+            Data = data;
+
+            if(ownData)
+                AddGCMemoryPressure();
         }
 
         /// <summary>
-        /// Finalizes an instance of the <see cref="MipSurface"/> class.
+        /// Constructs a new instance of the <see cref="MipData"/> class. Represents a 3D image. This allocates the owned memory.
         /// </summary>
-        ~MipSurface()
+        /// <param name="width">Width of the image, in texels.</param>
+        /// <param name="height">Height of the image, in texels.</param>
+        /// <param name="depth">Depth of the image, in texels.</param>
+        /// <param name="rowPitch">Row pitch.</param>
+        /// <param name="slicePitch">Slice pitch.</param>
+        public MipData(int width, int height, int depth, int rowPitch, int slicePitch)
+        {
+            m_isDisposed = false;
+
+            Width = width;
+            Height = height;
+            Depth = depth;
+
+            RowPitch = rowPitch;
+            SlicePitch = slicePitch;
+
+            m_ownData = true;
+            Data = MemoryHelper.AllocateMemory(SizeInBytes);
+            AddGCMemoryPressure();
+        }
+
+        /// <summary>
+        /// Constructs a new instance of the <see cref="MipData"/> class.
+        /// </summary>
+        /// <param name="bitmap">FreeImage bitmap to wrap or copy from.</param>
+        /// <param name="copyData">True to copy the image data, false to wrap the free image bitmap data.</param>
+        /// <exception cref="ArgumentException">Thrown if the bitmap is not valid.</exception>
+        public MipData(Surface bitmap, bool copyData = false)
+        {
+            if(bitmap == null || bitmap.IsDisposed)
+                throw new ArgumentException("Surface is not valid.");
+
+            m_isDisposed = false;
+
+            Width = bitmap.Width;
+            Height = bitmap.Height;
+            Depth = 1;
+
+            RowPitch = bitmap.Pitch;
+            SlicePitch = RowPitch * Height;
+
+            if(!copyData)
+            {
+                m_ownData = false;
+
+                Data = bitmap.DataPtr;
+            }
+            else
+            {
+                m_ownData = true;
+
+                int sizeInBytes = SizeInBytes;
+                Data = MemoryHelper.AllocateMemory(sizeInBytes);
+                MemoryHelper.CopyMemory(Data, bitmap.DataPtr, sizeInBytes);
+
+                AddGCMemoryPressure();
+            }
+        }
+
+        /// <summary>
+        /// Finalizes an instance of the <see cref="MipData"/> class.
+        /// </summary>
+        ~MipData()
         {
             Dispose(false);
         }
@@ -202,10 +319,23 @@ namespace TeximpNet.DDS
             if(!m_isDisposed)
             {
                 if(m_ownData)
+                {
                     MemoryHelper.FreeMemory(Data);
+                    RemoveGCMemoryPressure();
+                }
 
                 m_isDisposed = true;
             }
+        }
+
+        private void AddGCMemoryPressure()
+        {
+            GC.AddMemoryPressure(SizeInBytes);
+        }
+
+        private void RemoveGCMemoryPressure()
+        {
+            GC.RemoveMemoryPressure(SizeInBytes);
         }
     }
 }

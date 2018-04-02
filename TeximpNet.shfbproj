@@ -16,24 +16,25 @@
     <Name>Documentation</Name>
     <!-- SHFB properties -->
     <OutputPath>C:\Users\Nicholas\Documents\Visual Studio 2017\Projects\TeximpNet\Docs\</OutputPath>
-    <HtmlHelpName>TeximpNet Documentation %28February 2018%29</HtmlHelpName>
+    <HtmlHelpName>TeximpNet Documentation %28April 2018%29</HtmlHelpName>
     <Language>en-US</Language>
     <PresentationStyle>VS2013</PresentationStyle>
-    <HelpFileVersion>1.2.0</HelpFileVersion>
+    <HelpFileVersion>1.3.0</HelpFileVersion>
     <ProductTitle>TeximpNet</ProductTitle>
     <VendorName>
     </VendorName>
     <DocumentationSources>
       <DocumentationSource sourceFile="TeximpNet\bin\Release\net4\TeximpNet.dll" />
-<DocumentationSource sourceFile="TeximpNet\bin\Release\net4\TeximpNet.xml" /></DocumentationSources>
-    <HelpTitle>TeximpNet Documentation %28February 2018%29</HelpTitle>
+      <DocumentationSource sourceFile="TeximpNet\bin\Release\net4\TeximpNet.xml" />
+    </DocumentationSources>
+    <HelpTitle>TeximpNet Documentation %28April 2018%29</HelpTitle>
     <CopyrightText>Copyright &amp;#169%3b 2012-2018 AssimpNet - Nicholas Woodfield. All rights reserved.</CopyrightText>
     <NamespaceSummaries>
       <NamespaceSummaryItem name="(global)" isDocumented="False" />
-      <NamespaceSummaryItem name="TeximpNet" isDocumented="True">Main namespace - contains high level TeximpNet objects.</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="TeximpNet.Compression" isDocumented="True">Contains the Nvidia Texture Tools (NVTT) compression wrapper.</NamespaceSummaryItem>
-      <NamespaceSummaryItem name="TeximpNet.Unmanaged" isDocumented="True">Contains the low-level P/Invoke functions and unmanaged structures.</NamespaceSummaryItem>
-    </NamespaceSummaries>
+<NamespaceSummaryItem name="TeximpNet" isDocumented="True">Main namespace - contains high level TeximpNet objects.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="TeximpNet.Compression" isDocumented="True">Contains the Nvidia Texture Tools (NVTT) compression wrapper.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="TeximpNet.Unmanaged" isDocumented="True">Contains the low-level P/Invoke functions and unmanaged structures.</NamespaceSummaryItem>
+<NamespaceSummaryItem name="TeximpNet.DDS" isDocumented="True">Contains DDS file reading/writing operations.</NamespaceSummaryItem></NamespaceSummaries>
     <SyntaxFilters>C#</SyntaxFilters>
     <CollectionTocStyle>Flat</CollectionTocStyle>
     <HeaderText>

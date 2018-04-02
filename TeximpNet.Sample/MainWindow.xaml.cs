@@ -28,6 +28,7 @@ using Avalonia.Platform;
 using System;
 using System.IO;
 using TeximpNet.Compression;
+using TeximpNet.DDS;
 
 namespace TeximpNet.Sample
 {
@@ -54,22 +55,24 @@ namespace TeximpNet.Sample
             if (mipmaps.Load())
             {
                 int offset = 0;
-                foreach (CompressedImageData imagedata in mipmaps.MipChain)
-                {
-                    canvas.Children.Add(ToImage(imagedata, new Point(offset, 0)));
 
-                    offset += imagedata.Width;
+                DDSContainer ddsContainer = mipmaps.DDSContainer;
+                foreach(MipData mipData in ddsContainer.MipChains[0])
+                {
+                    canvas.Children.Add(ToImage(mipData, new Point(offset, 0)));
+
+                    offset += mipData.Width;
                 }
 
                 canvas.MinWidth = offset;
-                canvas.MinHeight = mipmaps.MipChain[0].Height;
+                canvas.MinHeight = ddsContainer.MipChains[0][0].Height;
             }
         }
 
-        private Image ToImage(CompressedImageData imageData, Point offset)
+        private Image ToImage(MipData mipData, Point offset)
         {
-            Bitmap bitmap = new Bitmap(PixelFormat.Bgra8888, imageData.DataPtr, imageData.Width, imageData.Height, imageData.Width * 4);
- 
+            Bitmap bitmap = new Bitmap(PixelFormat.Bgra8888, mipData.Data, mipData.Width, mipData.Height, mipData.RowPitch);
+
             Image image = new Image();
             image.Source = bitmap;
             image.Width = bitmap.PixelWidth;

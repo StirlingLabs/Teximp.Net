@@ -222,12 +222,50 @@ namespace TeximpNet.DDS
         };
 
         /// <summary>
+        /// Determines the DXGI format based on the incoming pixel format's bit count and masks only.
+        /// </summary>
+        /// <param name="bitCount">Bits per pixel</param>
+        /// <param name="redMask">Mask for red component.</param>
+        /// <param name="greenMask">Mask for green component.</param>
+        /// <param name="blueMask">Mask for blue component.</param>
+        /// <param name="alphaMask">Mask for alpha component.</param>
+        /// <returns>Found DXGI format, or unknown.</returns>
+        public static DXGIFormat DetermineDXGIFormat(uint bitCount, uint redMask, uint greenMask, uint blueMask, uint alphaMask)
+        {
+            //Search legacy mappings and try to determine the best-guess at the DXGI format
+
+            int index = 0;
+            for(index = 0; index < LegacyMappings.Length; index++)
+            {
+                LegacyFormatMap entry = LegacyMappings[index];
+
+                if(entry.LegacyFormat.RGBBitCount == bitCount)
+                {
+                    //RGB, RGBA, Alpha, Luminance
+                    if(entry.LegacyFormat.RedBitMask == redMask &&
+                        entry.LegacyFormat.GreenBitMask == greenMask &&
+                        entry.LegacyFormat.BlueBitMask == blueMask &&
+                        entry.LegacyFormat.AlphaBitMask == alphaMask)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            if(index >= LegacyMappings.Length)
+                return DXGIFormat.Unknown;
+
+            LegacyFormatMap mapping = LegacyMappings[index];
+            return mapping.Format;
+        }
+
+        /// <summary>
         /// Determines the DXGI format based on the incoming pixel format and import flags.
         /// </summary>
         /// <param name="pixelFormat">Pixel format read from the file.</param>
         /// <param name="flags">Import flags.</param>
         /// <param name="conversionFlags">Conversion flags (if any) denoting how the data needs to be transformed to expected format.</param>
-        /// <returns></returns>
+        /// <returns>Found DXGI format, or unknown.</returns>
         public static DXGIFormat DetermineDXGIFormat(in PixelFormat pixelFormat, DDSFlags flags, out ConversionFlags conversionFlags)
         {
             conversionFlags = ConversionFlags.None;

@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using TeximpNet.Compression;
+using TeximpNet.DDS;
 
 namespace TeximpNet.Sample
 {
@@ -30,24 +31,25 @@ namespace TeximpNet.Sample
     {
         private bool m_isDisposed;
         private String m_filename;
-        private List<CompressedImageData> m_mipChain;
+        private DDSContainer m_ddsContainer;
 
-        public IReadOnlyList<CompressedImageData> MipChain
+        public DDSContainer DDSContainer
         {
             get
             {
-                return m_mipChain;
+                return m_ddsContainer;
             }
         }
 
         public BunnyMipmaps(String filename)
         {
             m_filename = filename;
-            m_mipChain = new List<CompressedImageData>();
         }
 
         public bool Load()
         {
+            new Test.CompressorTestFixture().TestSetMipData();
+
             ClearMips();
 
             if (!System.IO.File.Exists(m_filename))
@@ -68,16 +70,17 @@ namespace TeximpNet.Sample
                 compressor.Compression.Format = CompressionFormat.BGRA;
                 compressor.Compression.SetBGRAPixelFormat(); //If want the output images in RGBA ordering, you get set the pixel layout differently
 
-                return compressor.Process(m_mipChain);
+                compressor.Process(out m_ddsContainer);
+                return m_ddsContainer != null;
             }
         }
 
         private void ClearMips()
         {
-            foreach (CompressedImageData data in m_mipChain)
-                data.Dispose();
+            if(m_ddsContainer != null)
+                m_ddsContainer.Dispose();
 
-            m_mipChain.Clear();
+            m_ddsContainer = null;
         }
 
         protected virtual void Dispose(bool disposing)

@@ -28,6 +28,7 @@
     </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\TeximpNet.Test\TeximpNet.Test.csproj" />
     <ProjectReference Include="..\TeximpNet\TeximpNet.csproj" />
   </ItemGroup>
 

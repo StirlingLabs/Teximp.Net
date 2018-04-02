@@ -25,12 +25,13 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.IO;
 using TeximpNet.Unmanaged;
+using TeximpNet.DDS;
 
 namespace TeximpNet.Compression
 {
     /// <summary>
     /// A compressor processes input image data (either from a <see cref="Surface"/> or just raw image data) using the Nvidia Texture Tools
-    /// API and outputs either to a file (e.g. DDS) or to memory. Processing can range from mipmap creation (with a variety of filters) to compressing RGBA
+    /// API and outputs either to a file (e.g. DDS) or to memory (e.g. <see cref="DDSContainer"/>). Processing can range from mipmap creation (with a variety of filters) to compressing RGBA
     /// data into a number of GPU compressed formats. Both 2D and Cubemap textures can be processed.
     /// </summary>
     public sealed class Compressor : IDisposable
@@ -45,17 +46,16 @@ namespace TeximpNet.Compression
         private OutputOptions m_outputOptions;
         private bool m_isDisposed;
 
-        //For writing to memory, but returning a list of images
-        private List<CompressedImageData> m_mipChain;
-        private CompressedImageData m_currentMip;
-        private CompressionFormat m_format;
+        //For writing to memory, but writing to a DDS container
+        private DDSContainer m_currentDDSContainer;
+        private MipData m_currentMip;
         private int m_currentBytePos;
+        private int m_currentFace;
 
         //For writing to memory, but writing out to a stream (e.g. writing file contents including headers)
         private bool m_outputtingToStream;
         private Stream m_currentStream;
-        private byte[] m_tempBuffer;
-        private IntPtr m_pinnedTempBufferPtr;
+        private StreamTransferBuffer m_currentBuffer;
 
         /// <summary>
         /// Gets the pointer to the native object.
@@ -167,11 +167,7 @@ namespace TeximpNet.Compression
             m_outputOptions.SetOutputToMemory(true);
 
             m_currentStream = stream;
-
-            if (m_tempBuffer == null)
-                m_tempBuffer = new byte[4096];
-
-            m_pinnedTempBufferPtr = MemoryHelper.PinObject(m_tempBuffer);
+            m_currentBuffer = new StreamTransferBuffer();
 
             try
             {
@@ -183,39 +179,60 @@ namespace TeximpNet.Compression
                 m_currentStream = null;
                 m_outputtingToStream = false;
 
-                MemoryHelper.UnpinObject(m_tempBuffer);
-                m_pinnedTempBufferPtr = IntPtr.Zero;
+                m_currentBuffer.Dispose();
+                m_currentBuffer = null;
             }
         }
 
         /// <summary>
-        /// Executes processing of input image data, and outputs the images to a list of <see cref="CompressedImageData"/> objects.
-        /// For 2D textures, the list will be the mipmap chain (largest mip to smallest). In the case of cubemap textures,
-        /// the list will have the mipmap chain of each face sequentially (e.g. all mips for Positive_X, then all mips for Negative_X, and so on).
+        /// Executes processing of input image data, and outputs the images as a <see cref="DDSContainer"/>. In the case of cubemap textures,
+        /// each cubemap face will have its own mipmap chain, in the order of <see cref="CubeMapFace"/> (+X, -X, +Y, -Y, +Z, -Z).
         /// </summary>
-        /// <param name="mipChain">List to hold output mip map images.</param>
-        /// <returns>True if the image was successfully processed and outputted to the list, false if otherwise.</returns>
-        public bool Process(List<CompressedImageData> mipChain)
+        /// <param name="compressedImages">Container that contains all the processed images. May be null if the operation was not successful.</param>
+        /// <returns>True if the image was successfully processed and outputted to a container, false if otherwise.</returns>
+        public bool Process(out DDSContainer compressedImages)
         {
-            if(mipChain == null || !m_inputOptions.HasData)
+            compressedImages = null;
+
+            if(!m_inputOptions.HasData)
                 return false;
 
             m_outputtingToStream = false;
             m_outputOptions.SetOutputToMemory(true);
 
-            m_format = m_compressionOptions.Format;
-            m_mipChain = mipChain;
+            DDSContainer ddsContainer = new DDSContainer(GetDXGIFormat(), GetTextureDimension());
+            m_currentDDSContainer = ddsContainer;
+            m_currentMip = null;
+            m_currentBytePos = 0;
+
+            //Start first face's mipchains...always has at least this one
+            m_currentFace = 0;
+            ddsContainer.MipChains.Add(new MipChain());
+
+            bool success = false;
 
             try
             {
-                return NvTextureToolsLibrary.Instance.Process(m_compressorPtr, m_inputOptionsPtr, m_compressionOptionsPtr, m_outputOptionsPtr);
+                success = NvTextureToolsLibrary.Instance.Process(m_compressorPtr, m_inputOptionsPtr, m_compressionOptionsPtr, m_outputOptionsPtr);
             }
             finally
             {
                 //Make sure we don't hold onto any references
-                m_mipChain = null;
+                m_currentDDSContainer = null;
                 m_currentMip = null;
+
+                //If an error...dispose the container
+                if(!success)
+                {
+                    System.Diagnostics.Debug.Assert(false);
+
+                    ddsContainer.Dispose();
+                    ddsContainer = null;
+                }
             }
+
+            compressedImages = ddsContainer;
+            return success;
         }
 
         //BeginImageHandler callback
@@ -224,6 +241,38 @@ namespace TeximpNet.Compression
             if (m_outputtingToStream)
                 return;
 
+            //Determine pitch information...
+            int realWidth, realHeight, rowPitch, slicePitch, bytesPerPixel;
+            ImageHelper.ComputePitch(m_currentDDSContainer.Format, width, height, out rowPitch, out slicePitch, out realWidth, out realHeight, out bytesPerPixel);
+
+            bool isCompressed = FormatConverter.IsCompressed(m_currentDDSContainer.Format);
+            if(!isCompressed)
+            {
+                //Note: We cannot change the input format to be anything other than 32-bit RGBA...
+                System.Diagnostics.Debug.Assert(bytesPerPixel == 4);
+
+                rowPitch = bytesPerPixel * width;
+                slicePitch = rowPitch * height;
+            }
+
+            //Create new mip map
+            m_currentMip = new MipData(width, height, depth, rowPitch, slicePitch);
+
+            System.Diagnostics.Debug.Assert(m_currentMip.SizeInBytes == size);
+
+            m_currentBytePos = 0;
+
+            //If new face, add a new mipchain
+            if(m_currentFace != face)
+            {
+                m_currentFace = face;
+                m_currentDDSContainer.MipChains.Add(new MipChain());
+            }
+
+            //Add mipmap to last mipchain
+            m_currentDDSContainer.MipChains[m_currentDDSContainer.MipChains.Count - 1].Add(m_currentMip);
+            
+            /*
             //Create different image datas based on the type of texture we're processing
             switch(m_inputOptions.TextureType)
             {
@@ -244,7 +293,7 @@ namespace TeximpNet.Compression
             System.Diagnostics.Debug.Assert(m_currentMip.SizeInBytes == size);
 
             m_currentBytePos = 0;
-            m_mipChain.Add(m_currentMip);
+            m_mipChain.Add(m_currentMip);*/
         }
 
         //OutputHandler callback, if writing header, that usually is the first call before any begin-end image blocks
@@ -255,20 +304,20 @@ namespace TeximpNet.Compression
                 int offset = 0;
                 while(size > 0)
                 {
-                    int count = Math.Min(m_tempBuffer.Length, size);
+                    int count = Math.Min(m_currentBuffer.Length, size);
                     size -= count;
                     
-                    MemoryHelper.CopyMemory(m_pinnedTempBufferPtr, MemoryHelper.AddIntPtr(data, offset), count);
+                    MemoryHelper.CopyMemory(m_currentBuffer.Pointer, MemoryHelper.AddIntPtr(data, offset), count);
                     offset += count;
 
-                    m_currentStream.Write(m_tempBuffer, 0, count);
+                    m_currentBuffer.WriteBytes(m_currentStream, count);
                 }
             }
             else
             {
                 if (m_currentMip != null)
                 {
-                    MemoryHelper.CopyMemory(MemoryHelper.AddIntPtr(m_currentMip.DataPtr, m_currentBytePos), data, size);
+                    MemoryHelper.CopyMemory(MemoryHelper.AddIntPtr(m_currentMip.Data, m_currentBytePos), data, size);
                     m_currentBytePos += size;
                 }
             }
@@ -341,6 +390,53 @@ namespace TeximpNet.Compression
                 }
 
                 m_isDisposed = true;
+            }
+        }
+
+        private DXGIFormat GetDXGIFormat()
+        {
+            CompressionFormat format = m_compressionOptions.Format;
+            switch(format)
+            {
+                case CompressionFormat.BGRA:
+                    {
+                        //Determine uncompressed format
+                        uint bpp, redMask, greenMask, blueMask, alphaMask;
+                        m_compressionOptions.GetPixelFormat(out bpp, out redMask, out greenMask, out blueMask, out alphaMask);
+
+                        return FormatConverter.DetermineDXGIFormat(bpp, redMask, greenMask, blueMask, alphaMask);
+                    }
+                case CompressionFormat.BC1:
+                case CompressionFormat.BC1a:
+                    return DXGIFormat.BC1_UNorm;
+                case CompressionFormat.BC2:
+                    return DXGIFormat.BC2_UNorm;
+                case CompressionFormat.BC3:
+                case CompressionFormat.BC3n:
+                    return DXGIFormat.BC3_UNorm;
+                case CompressionFormat.BC4:
+                    return DXGIFormat.BC4_UNorm;
+                case CompressionFormat.BC5:
+                    return DXGIFormat.BC5_UNorm;
+                default:
+                    return DXGIFormat.Unknown;
+            }
+        }
+
+        private TextureDimension GetTextureDimension()
+        {
+            TextureType texType = m_inputOptions.TextureType;
+
+            switch(texType)
+            {
+                case TextureType.Texture2D:
+                    return TextureDimension.Two;
+                case TextureType.TextureCube:
+                    return TextureDimension.Cube;
+                case TextureType.Texture3D:
+                    return TextureDimension.Three;
+                default:
+                    throw new InvalidOperationException();
             }
         }
 
@@ -881,6 +977,49 @@ namespace TeximpNet.Compression
             }
 
             /// <summary>
+            /// Sets image data as input. Format is always considered to be a 32-bit BGRA form, if in RGBA ordering, a copy of the data will be taken and re-ordered.
+            /// Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int, int)"/> first, other this will error.
+            /// </summary>
+            /// <param name="data">Image data, assumed to be either 32-bit BGRA or RGBA format.</param>
+            /// <param name="isBGRA">True if the data is BGRA ordering, false if RGBA ordering.</param>
+            /// <param name="mipLevel">Which mipmap level the image corresponds to.</param>
+            /// <param name="arrayIndex">Which array index the image corresponds to.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
+            public bool SetMipmapData(MipData data, bool isBGRA, int mipLevel = 0, int arrayIndex = 0)
+            {
+                if(data == null)
+                    return false;
+
+                ImageInfo imageInfo = new ImageInfo(data.Width, data.Height, data.Depth, arrayIndex, mipLevel, data.RowPitch, data.SlicePitch);
+                return SetMipmapData(data.Data, isBGRA, imageInfo);
+            }
+
+            /// <summary>
+            /// Sets cubemap face image data as input. Format is always considered to be a 32-bit BGRA form, if in RGBA ordering, a copy of the data will be taken and re-ordered.
+            /// Don't forget to call <see cref="SetTextureLayout(TextureType, int, int, int, int)"/> first, other this will error.
+            /// </summary>
+            /// <param name="data">Image data, assumed to be either 32-bit BGRA or RGBA format.</param>
+            /// <param name="isBGRA">True if the data is BGRA ordering, false if RGBA ordering.</param>
+            /// <param name="face">Which cubemap face the image corresponds to.</param>
+            /// <param name="mipmapLevel">Which mipmap level the image corresponds to.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
+            public bool SetMipmapData(MipData data, bool isBGRA, CubeMapFace face, int mipmapLevel = 0)
+            {
+                if(data != null)
+                {
+                    //Cubemaps should be square...
+                    System.Diagnostics.Debug.Assert(data.Width == data.Height);
+                }
+
+                //Make sure the cubemap face is valid...
+                if(face == CubeMapFace.None)
+                    face = CubeMapFace.Positive_X;
+
+                ImageInfo imageInfo = new ImageInfo(data.Width, data.Height, data.Depth, (int) face, mipmapLevel, data.RowPitch, data.SlicePitch);
+                return SetMipmapData(data.Data, isBGRA, imageInfo);
+            }
+
+            /// <summary>
             /// Sets input data from a specified surface. This sets the texture layout as a 2D texture
             /// and the first mipmap with the surface data.
             /// </summary>
@@ -893,7 +1032,7 @@ namespace TeximpNet.Compression
 
                 SetTextureLayout(TextureType.Texture2D, data.Width, data.Height, 1);
 
-                bool success = SetMipmapData(data, 0);
+                bool success = SetMipmapData(data);
 
                 if (!success)
                     ClearTextureLayout();
@@ -935,6 +1074,80 @@ namespace TeximpNet.Compression
                 {
                     //Set each cubemap face, if errors then reset and return
                     if(!SetMipmapData(cubeFaces[i], (CubeMapFace)i, 0))
+                    {
+                        ClearTextureLayout();
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            /// <summary>
+            /// Sets input data from a specified surface. This sets the texture layout as a 2D or 3D texture depending on the dimensions of the surface.
+            /// and the first mipmap with the surface data.
+            /// </summary>
+            /// <param name="data">Bitmap surface data, if not 32-bit RGBA, a copy will be taken and converted.</param>
+            /// <param name="isBGRA">True if the data is BGRA ordering, false if RGBA ordering.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
+            public bool SetData(MipData data, bool isBGRA)
+            {
+                if(data == null)
+                    return false;
+
+                TextureType type = TextureType.Texture2D;
+                int width = data.Width;
+                int height = data.Height;
+                int depth = data.Depth;
+
+                if(data.Depth > 1)
+                    type = TextureType.Texture3D;
+
+                SetTextureLayout(type, width, height, depth);
+
+                bool success = SetMipmapData(data, isBGRA);
+
+                if(!success)
+                    ClearTextureLayout();
+
+                return success;
+            }
+
+            /// <summary>
+            /// Sets input data from an array of surfaces representing a cubemap (6 surfaces total). This sets the texture layout as a 
+            /// cubemap and sets each surface as the first mipmap of each face. All the surface dimensions must match, and there must be
+            /// six faces.
+            /// </summary>
+            /// <param name="cubeFaces">Array of bitmap surfaces, in the order of the <see cref="CubeMapFace"/> enum (+X, -X, +Y, -Y, +Z, -Z). If surfaces are not 32-bit RGBA, a copy will be taken and converted..</param>
+            /// <param name="isBGRA">True if the data is BGRA ordering, false if RGBA ordering.</param>
+            /// <returns>True if the data has been set, false if otherwise.</returns>
+            public bool SetData(MipData[] cubeFaces, bool isBGRA)
+            {
+                if(cubeFaces == null || cubeFaces.Length != 6)
+                    return false;
+
+                MipData first = cubeFaces[0];
+
+                //Must be a square image
+                if(first == null || first.Width != first.Height)
+                    return false;
+
+                for(int i = 1; i < cubeFaces.Length; i++)
+                {
+                    MipData next = cubeFaces[i];
+                    if(next == null)
+                        return false;
+
+                    if(first.Width != next.Width || first.Height != next.Height)
+                        return false;
+                }
+
+                SetTextureLayout(TextureType.TextureCube, first.Width, first.Height, 1);
+
+                for(int i = 0; i < cubeFaces.Length; i++)
+                {
+                    //Set each cubemap face, if errors then reset and return
+                    if(!SetMipmapData(cubeFaces[i], isBGRA, (CubeMapFace) i, 0))
                     {
                         ClearTextureLayout();
                         return false;
