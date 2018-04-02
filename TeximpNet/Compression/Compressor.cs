@@ -271,29 +271,6 @@ namespace TeximpNet.Compression
 
             //Add mipmap to last mipchain
             m_currentDDSContainer.MipChains[m_currentDDSContainer.MipChains.Count - 1].Add(m_currentMip);
-            
-            /*
-            //Create different image datas based on the type of texture we're processing
-            switch(m_inputOptions.TextureType)
-            {
-                case TextureType.Texture2D:
-                    m_currentMip = new CompressedImageData(width, height, m_format, face);
-                    break;
-                case TextureType.Texture3D:
-                    m_currentMip = new CompressedImageData(width, height, depth, m_format);
-                    break;
-                case TextureType.TextureCube:
-                    m_currentMip = new CompressedImageData(width, height, (CubeMapFace)face, m_format);
-                    break;
-                default:
-                    m_currentMip = null;
-                    break;
-            }
-
-            System.Diagnostics.Debug.Assert(m_currentMip.SizeInBytes == size);
-
-            m_currentBytePos = 0;
-            m_mipChain.Add(m_currentMip);*/
         }
 
         //OutputHandler callback, if writing header, that usually is the first call before any begin-end image blocks
