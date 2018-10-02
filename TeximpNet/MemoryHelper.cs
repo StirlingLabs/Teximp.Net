@@ -114,7 +114,7 @@ namespace TeximpNet
         /// <typeparam name="T">Enum type.</typeparam>
         /// <param name="value">Value to cast.</param>
         /// <returns>Enum value.</returns>
-        public static T CastToEnum<V, T>(V value) where V : struct, IComparable, IFormattable, IConvertible where T : struct, IComparable, IFormattable, IConvertible
+        public static T CastToEnum<V, T>(V value) where V : unmanaged where T : Enum
         {
             return MemoryInterop.As<V, T>(ref value);
         }
