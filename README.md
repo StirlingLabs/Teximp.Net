@@ -1,3 +1,5 @@
+![alt text](https://bitbucket.org/Starnick/teximpnet/raw/9837c5c4afd6a18826f570a4437330e0e2f3b906/logo.png "TeximpNet Logo")
+
 **The latest release can be downloaded via  [NuGet](https://www.nuget.org/packages/TeximpNet/).**
 
 ## Introduction ##
