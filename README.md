@@ -5,7 +5,7 @@
 ## Introduction ##
 This is the official repository for **TeximpNet**, a cross-platform .NET wrapper for the [FreeImage](http://freeimage.sourceforge.net/) and [Nvidia Texture Tools](https://github.com/castano/nvidia-texture-tools) libraries. This wrapper combines functionality from both unmanaged libraries to provide a single, easy to use API surface to import, manipulate and export images. The general motivation is to process textures for graphics applications, so there is an emphasis on using the Nvidia Texture Tools library for compression and mipmap chain generation. 
 
-P/Invoke is used to communicate with the C-API's of both native libraries and because the managed assembly is compiled as **AnyCpu** where the native DLLs are loaded dynamically, **TexImpNet** fully supports usage with 32 and 64 bit applications without needing to be recompiled.
+P/Invoke is used to communicate with the C-API's of both native libraries. The managed assembly is compiled as AnyCpu and the native DLLs are loaded dynamically for either 32 or 64 bit applications.
 
 The library is split between two parts, a low level and a high level. The intent is to give as much freedom as possible to the developer to work with the native libraries from managed code.
 
