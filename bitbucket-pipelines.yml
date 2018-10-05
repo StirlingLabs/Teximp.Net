@@ -24,4 +24,4 @@ pipelines:
           - dotnet restore
           - dotnet build $PROJECT_NAME --framework $FRAMEWORK --configuration $CONFIG
           - dotnet build $SAMPLE_NAME --configuration $CONFIG
-          - dotnet test $TEST_NAME --configuration $CONFIG
+          - dotnet test $TEST_NAME --framework netcoreapp1.1 --configuration $CONFIG
