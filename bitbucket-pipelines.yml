@@ -20,8 +20,7 @@ pipelines:
           - export SAMPLE_NAME=TeximpNet.Sample
           - export TEST_NAME=TeximpNet.Test
           - export CONFIG=Release
-          - export FRAMEWORK=netstandard1.3
           - dotnet restore
-          - dotnet build $PROJECT_NAME --framework $FRAMEWORK --configuration $CONFIG
-          - dotnet build $SAMPLE_NAME --configuration $CONFIG
+          - dotnet build $PROJECT_NAME --framework netstandard1.3 --configuration $CONFIG
+          - dotnet build $SAMPLE_NAME --framework netcoreapp1.1 --configuration $CONFIG
           - dotnet test $TEST_NAME --framework netcoreapp1.1 --configuration $CONFIG
