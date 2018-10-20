@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>netcoreapp1.1;net461</TargetFrameworks>
+        <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
         <LangVersion>latest</LangVersion>
         <ApplicationIcon />
-        <StartupObject />
+        <StartupObject>TeximpNet.Sample.App</StartupObject>
         <AssemblyName>TeximpNet.Sample</AssemblyName>
         <RootNamespace>TeximpNet.Sample</RootNamespace>
     </PropertyGroup>
@@ -22,8 +22,8 @@
       </Content>
     </ItemGroup>
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="0.5.0" />
-        <PackageReference Include="Avalonia.Desktop" Version="0.5.0" />
+        <PackageReference Include="Avalonia" Version="0.6.1" />
+        <PackageReference Include="Avalonia.Desktop" Version="0.6.1" />
         <PackageReference Include="Serilog.Sinks.Trace" Version="2.1.0" />
     </ItemGroup>
 
