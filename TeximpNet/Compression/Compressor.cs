@@ -407,7 +407,7 @@ namespace TeximpNet.Compression
             switch(texType)
             {
                 case TextureType.Texture2D:
-                case TextureType.Texture2D_Array:
+                case TextureType.Texture2DArray:
                     return TextureDimension.Two;
                 case TextureType.TextureCube:
                     return TextureDimension.Cube;
@@ -764,7 +764,7 @@ namespace TeximpNet.Compression
                     m_depth = 1;
 
                 //If type is not a 2D array texture, arrayCount must be 1... (cubemap arrays are possible, but not supported)
-                if(type != TextureType.Texture2D_Array)
+                if(type != TextureType.Texture2DArray)
                     m_arrayCount = 1;
 
                 //Allocate face data
@@ -778,7 +778,7 @@ namespace TeximpNet.Compression
                         for (int i = 0; i < 6; i++)
                             m_faceHasData.Add(false);
                         break;
-                    case TextureType.Texture2D_Array:
+                    case TextureType.Texture2DArray:
                         for(int i = 0; i < m_arrayCount; i++)
                             m_faceHasData.Add(false);
                         break;
@@ -786,7 +786,7 @@ namespace TeximpNet.Compression
 
                 if(m_generateMipmaps && m_maxLevel == -1)
                     m_mipCount = ImageHelper.CountMipmaps(width, height, depth);
-
+  
                 NvTextureToolsLibrary.Instance.SetInputOptionsTextureLayout(m_inputOptionsPtr, type, m_width, m_height, m_depth, m_arrayCount);
             }
 

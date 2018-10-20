@@ -94,7 +94,83 @@ namespace TeximpNet.Compression
         /// <summary>
         /// Block compression format that contains two alpha blocks. It's typically used to compress normal maps.
         /// </summary>
-        BC5 = 7
+        BC5 = 7,
+
+        //Not supported, but keep the entry so if NVTT supports it, we know what to add
+        //DXT1n = 8,
+
+        //Not supported, but keep the entry so if NVTT supports it, we know what to add
+        //CTX1 = 9,
+
+        /// <summary>
+        /// Block compression format for HDR textures, that supports 3 color channels each "half floating point" (16 bits).
+        /// </summary>
+        BC6 = 10,
+
+        /// <summary>
+        /// Block compression format that has three color channels (4-7 bits per channel) and transparency (0-8 bits for alpha).
+        /// </summary>
+        BC7 = 11,
+
+        /// <summary>
+        /// Variation of <see cref="BC3"/> that is used to compress HDR textures.
+        /// </summary>
+        BC3_RGBM = 12,
+
+        /// <summary>
+        /// Ericsson Texture Compression format with 3 color channels and no transparency. Commonly used for mobile devices.
+        /// </summary>
+        ETC1 = 13,
+
+        /// <summary>
+        /// Ericsson Texture Compression with only red channel. Commonly used for mobile devices.
+        /// </summary>
+        ETC2_R = 14,
+
+        /// <summary>
+        /// Ericsson Texture Compression with only red/green channel. Commonly used for mobile devices.
+        /// </summary>
+        ETC2_RG = 15,
+
+        /// <summary>
+        /// Ericsson Texture Compression with 3 color channels and no transparency Commonly used for mobile devices.
+        /// </summary>
+        ETC2_RGB = 16,
+
+        /// <summary>
+        /// Ericsson Texture Compression with 3 color channels and transparency. Commonly used for mobile devices.
+        /// </summary>
+        ETC2_RGBA = 17,
+
+        /// <summary>
+        /// Ericsson Texture Compression with 3 color channels and 1-bit alpha channel. Commonly used for mobile devices.
+        /// </summary>
+        ETC2_RGB_A1 = 18,
+
+        /// <summary>
+        /// Ericsson Texture Compression for HDR textures with 3 color channels. Commonly used for mobile devices.
+        /// </summary>
+        ETC2_RGBM = 19,
+
+        /// <summary>
+        /// PVRTC compression format, with 2 bits per pixel and no transparency. Commonly used for mobile devices.
+        /// </summary>
+        PVR_2BPP_RGB = 20,
+
+        /// <summary>
+        /// PVRTC compression format, with 4 bits per pixel and no transparency. Commonly used for mobile devices.
+        /// </summary>
+        PVR_4BPP_RGB = 21,
+
+        /// <summary>
+        /// PVRTC compression format, with 2 bits per pixel and transparency. Commonly used for mobile devices.
+        /// </summary>
+        PVR_2BPP_RGBA = 22,
+
+        /// <summary>
+        /// PVRTC compression format, with 4 bits per pixel and transparency. Commonly used for mobile devices.
+        /// </summary>
+        PVR_4BPP_RGBA = 23
     }
 
     /// <summary>
@@ -143,7 +219,7 @@ namespace TeximpNet.Compression
         /// <summary>
         /// Input data is an array of 2D textures that share the same width/height.
         /// </summary>
-        Texture2D_Array
+        Texture2DArray
     }
 
     /// <summary>
@@ -212,14 +288,29 @@ namespace TeximpNet.Compression
         ToNextPowerOfTwo = 1,
 
         /// <summary>
-        /// Dimensions are scaled up or down depending on which is closer to the current dimension.
+        /// Dimensions are scaled up or down to nearest power of two depending on which is closer to the current dimension.
         /// </summary>
         ToNearestPowerOfTwo = 2,
 
         /// <summary>
         /// Dimensions are scaled down to the previous power of two.
         /// </summary>
-        ToPreviousPowerOfTwo = 3
+        ToPreviousPowerOfTwo = 3,
+
+        /// <summary>
+        /// Dimensions are scaled up to the next multiple of four.
+        /// </summary>
+        ToNextMultipleOfFour,
+
+        /// <summary>
+        /// Dimensions are scaled up or down to nearest multiple of four depending on which is closer the current dimension.
+        /// </summary>
+        ToNearestMultipleOfFour,
+
+        /// <summary>
+        /// Dimensions are scaled down to the previous multiple of four.
+        /// </summary>
+        ToPreviousMultipleOfFour
     }
 
     /// <summary>

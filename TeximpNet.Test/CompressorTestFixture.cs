@@ -185,7 +185,7 @@ namespace TeximpNet.Test
 
             Compressor compressor = new Compressor();
             compressor.Input.GenerateMipmaps = true;
-            compressor.Input.SetTextureLayout(TextureType.Texture2D_Array, width, height, 1, arrayCount);
+            compressor.Input.SetTextureLayout(TextureType.Texture2DArray, width, height, 1, arrayCount);
             compressor.Compression.Format = CompressionFormat.DXT1;
 
             //Load the first 10 noise bitmaps
