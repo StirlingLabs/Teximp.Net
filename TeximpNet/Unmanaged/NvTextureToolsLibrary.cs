@@ -137,6 +137,7 @@ namespace TeximpNet.Unmanaged
         /// <param name="width">Width of the image.</param>
         /// <param name="height">Height of the image.</param>
         /// <param name="depth">Depth of the image.</param>
+        /// <param name="arraySize">Array count if 2D texture array. For all other types (including cubemap) should be set to 1.</param>
         public void SetInputOptionsTextureLayout(IntPtr inputOptions, TextureType type, int width, int height, int depth, int arraySize)
         {
             if(inputOptions == IntPtr.Zero)
