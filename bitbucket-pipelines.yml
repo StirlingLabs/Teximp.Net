@@ -13,7 +13,7 @@ pipelines:
         script:
            #Pull down libdl.so, libminizip1.so, libgomp.so, libjxr dependency
           - apt-get update
-          - apt-get install -y libc6
+          - apt-get install -y libc6-dev
           - apt-get install -y libminizip1
           - apt-get install -y libgomp1
           - apt-get install -y libjxr0
