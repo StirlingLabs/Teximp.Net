@@ -188,21 +188,24 @@ namespace TeximpNet.Test
         }
 
         [Fact]
-        public void TestThreadedLibraryLoading()
+        public void TestThreadedImageLoading()
         {
-            //Make sure the library is freed first...
-            if (Unmanaged.FreeImageLibrary.Instance.IsLibraryLoaded)
-                Unmanaged.FreeImageLibrary.Instance.FreeLibrary();
+            //!Note! Originally this was to test loading the library when executing multiple threads
+            //XUnit is already running tests in parallel. Freeing the native library at this point caused an unknown error that aborted OTHER
+            //tests! Changed this to test load a few images in parallel...
 
             String fileName = GetInputFile("bunny.jpg");
 
             List<Task> tasks = new List<Task>();
 
-            for(int i = 0; i < 10; i++)
+            for(int i = 0; i < 5; i++)
             {
                 tasks.Add(Task.Run(() =>
                 {
                     Surface surfaceFromFile = Surface.LoadFromFile(fileName);
+                    Assert.NotNull(surfaceFromFile);
+                    Assert.True(surfaceFromFile.Width > 0);
+                    Assert.True(surfaceFromFile.Height > 0);
                     surfaceFromFile.Dispose();
                 }));
             }
