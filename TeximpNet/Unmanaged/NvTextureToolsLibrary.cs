@@ -137,7 +137,7 @@ namespace TeximpNet.Unmanaged
         /// <param name="width">Width of the image.</param>
         /// <param name="height">Height of the image.</param>
         /// <param name="depth">Depth of the image.</param>
-        public void SetInputOptionsTextureLayout(IntPtr inputOptions, TextureType type, int width, int height, int depth)
+        public void SetInputOptionsTextureLayout(IntPtr inputOptions, TextureType type, int width, int height, int depth, int arraySize)
         {
             if(inputOptions == IntPtr.Zero)
                 return;
@@ -146,7 +146,7 @@ namespace TeximpNet.Unmanaged
 
             Functions.nvttSetInputOptionsTextureLayout func = GetFunction<Functions.nvttSetInputOptionsTextureLayout>(FunctionNames.nvttSetInputOptionsTextureLayout);
 
-            func(inputOptions, type, width, height, depth);
+            func(inputOptions, type, width, height, depth, arraySize);
         }
 
         /// <summary>
@@ -866,7 +866,7 @@ namespace TeximpNet.Unmanaged
             public delegate void nvttDestroyInputOptions(IntPtr inputOptions);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetInputOptionsTextureLayout)]
-            public delegate void nvttSetInputOptionsTextureLayout(IntPtr inputOptions, TextureType type, int width, int height, int depth);
+            public delegate void nvttSetInputOptionsTextureLayout(IntPtr inputOptions, TextureType type, int width, int height, int depth, int arraySize);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttResetInputOptionsTextureLayout)]
             public delegate void nvttResetInputOptionsTextureLayout(IntPtr inputOptions);

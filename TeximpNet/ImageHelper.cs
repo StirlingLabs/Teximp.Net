@@ -78,6 +78,16 @@ namespace TeximpNet
         }
 
         /// <summary>
+        /// Ensures the value is 1 or greater. Example: Width/Height/Depth of any image should always be at least 1.
+        /// </summary>
+        /// <param name="val">Value to validate</param>
+        /// <returns>Value that is 1 or greater.</returns>
+        public static int EnsureOneOrGreater(int val)
+        {
+            return Math.Max(1, Math.Abs(val));
+        }
+
+        /// <summary>
         /// Gets the previous power of two value.
         /// </summary>
         /// <param name="v">Previous value.</param>

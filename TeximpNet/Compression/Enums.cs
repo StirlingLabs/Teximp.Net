@@ -138,7 +138,12 @@ namespace TeximpNet.Compression
         /// <summary>
         /// Input data is a 3D texture.
         /// </summary>
-        Texture3D = 2
+        Texture3D = 2,
+
+        /// <summary>
+        /// Input data is an array of 2D textures that share the same width/height.
+        /// </summary>
+        Texture2D_Array
     }
 
     /// <summary>
