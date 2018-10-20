@@ -48,8 +48,6 @@ namespace TeximpNet.Sample
 
         public bool Load()
         {
-            new Test.CompressorTestFixture().TestSetMipData();
-
             ClearMips();
 
             if (!System.IO.File.Exists(m_filename))
