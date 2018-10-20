@@ -23,6 +23,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using TeximpNet.Compression;
 using TeximpNet.DDS;
 using Xunit;
@@ -66,6 +67,8 @@ namespace TeximpNet.Test
                 foreach(DDS.MipData mip in mips)
                     Assert.NotNull(mip);
             }
+
+            ddsContainer.Dispose();
         }
 
         [Fact]
@@ -124,12 +127,21 @@ namespace TeximpNet.Test
 
             Surface[] surfaces = new Surface[6];
 
+            //Load in parallel
+            Parallel.For(0, fileNames.Count, (int i) =>
+            {
+                String file = GetInputFile(Path.Combine("Cubemap", fileNames[i]));
+                surfaces[i] = Surface.LoadFromFile(file, true);
+            });
+
+            /*
             for(int i = 0; i < fileNames.Count; i++)
             {
                 String file = GetInputFile(Path.Combine("Cubemap", fileNames[i]));
                 surfaces[i] = Surface.LoadFromFile(file, true);
             }
-            
+            */
+
             try
             {
                 compressor.Input.SetData(surfaces);
@@ -141,6 +153,8 @@ namespace TeximpNet.Test
             }
 
             String outputFile = GetOutputFile("Nebula.dds");
+            String outputFile2 = GetOutputFile("Nebula-2.dds");
+
             Assert.True(compressor.Process(outputFile));
 
             //Look at compressed image processing too
@@ -156,6 +170,62 @@ namespace TeximpNet.Test
                 foreach(MipData mip in mips)
                     Assert.NotNull(mip);
             }
+
+            //Save out file so we can compare
+            ddsContainer.Write(outputFile2);
+            ddsContainer.Dispose();
+        }
+
+        [Fact]
+        public void TestProcess2DArrayTexture()
+        {
+            int width = 256;
+            int height = 256;
+            int arrayCount = 10;
+
+            Compressor compressor = new Compressor();
+            compressor.Input.GenerateMipmaps = true;
+            compressor.Input.SetTextureLayout(TextureType.Texture2D_Array, width, height, 1, arrayCount);
+            compressor.Compression.Format = CompressionFormat.DXT1;
+
+            //Load the first 10 noise bitmaps
+            String fileNameTemplate = "Noise_Perlin0{0}{1}{2}.bmp";
+            List<int> digits = new List<int>();
+
+            for(int i = 0; i < arrayCount; i++)
+            {
+                GetDigits(digits, i, 3);
+
+                String inputFile = GetInputFile(Path.Combine("3D_Perlin_Noise", String.Format(fileNameTemplate, digits[0].ToString(), digits[1].ToString(), digits[2].ToString())));
+                using(Surface imageFromFile = Surface.LoadFromFile(inputFile, true))
+                {
+                    //Make sure its 32-bit BGRA data
+                    imageFromFile.ConvertTo(ImageConversion.To32Bits);
+
+                    compressor.Input.SetMipmapData(imageFromFile, 0, i);
+                }
+            }
+
+            //Write to file
+            String outputFile = GetOutputFile("2DArray_Perlin_Noise.dds");
+            Assert.True(compressor.Process(outputFile));
+
+            //Also process to list of mipmaps
+            DDSContainer ddsContainer;
+
+            Assert.True(compressor.Process(out ddsContainer));
+            Assert.NotNull(ddsContainer);
+            Assert.True(ddsContainer.MipChains.Count == arrayCount);
+
+            foreach(MipChain mips in ddsContainer.MipChains)
+            {
+                Assert.True(mips.Count == compressor.Input.MipmapCount);
+
+                foreach(MipData mip in mips)
+                    Assert.NotNull(mip);
+            }
+
+            ddsContainer.Dispose();
         }
 
         [Fact]
@@ -216,6 +286,8 @@ namespace TeximpNet.Test
                     foreach(MipData mip in mips)
                         Assert.NotNull(mip);
                 }
+
+                ddsContainer.Dispose();
             }
             finally
             {
@@ -268,6 +340,8 @@ namespace TeximpNet.Test
                     Assert.True(a.B == b.B);
                     Assert.True(a.A == b.A);
                 }
+
+                ddsContainer.Dispose();
             }
             finally
             {
@@ -314,6 +388,7 @@ namespace TeximpNet.Test
                 Assert.True(v1.R == v2.R && v1.G == v2.G && v1.B == v2.B && v1.A == v2.A);
             }
 
+            outputImage1.Dispose();
             compressor.Input.SetData(rgbaMip, false);
             compressor.Compression.SetRGBAPixelFormat();
 
@@ -330,6 +405,7 @@ namespace TeximpNet.Test
                 Assert.True(v1.R == v2.R && v1.G == v2.G && v1.B == v2.B && v1.A == v2.A);
             }
 
+            outputImage2.Dispose();
             MemoryHelper.UnpinObject(dataRGBA);
             MemoryHelper.UnpinObject(dataBGRA);
         }
