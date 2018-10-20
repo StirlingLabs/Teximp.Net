@@ -22,5 +22,5 @@ pipelines:
           - export CONFIG=Release
           - dotnet restore
           - dotnet build $PROJECT_NAME --framework netstandard1.3 --configuration $CONFIG
-          - dotnet build $SAMPLE_NAME --framework netcoreapp1.1 --configuration $CONFIG
-          #- dotnet test $TEST_NAME --framework netcoreapp1.1 --configuration $CONFIG
+          - dotnet build $SAMPLE_NAME --framework netcoreapp2.1 --configuration $CONFIG
+          - dotnet test $TEST_NAME --framework netcoreapp2.1 --configuration $CONFIG
