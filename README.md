@@ -23,15 +23,20 @@ The library is split between two parts, a low level and a high level. The intent
 
 ## Supported Platforms ##
 
-TeximpNet officially targets the **.NET Standard 1.3** and supplies binaries for **32/64 bit Windows** and **64 bit Linux (tested on ubuntu)**. The library is able to support **MacOS** but native binaries are not yet bundled with the official NuGet package. To use the library on your
-preferred platform, you may have to build and supply the native binaries yourself.
+TeximpNet officially targets the **.NET Standard 1.3** and supplies binaries for the following platforms:
 
-Additionally, the NuGet package has targets for **.NET Framework 4.x** and **.NET Framework 3.5** should you need them. It was compiled with Visual Studio 2017, but it has been compiled on Ubuntu using the DotNet CLI. There is one **build-time only** dependency, an IL Patcher also distributed as a cross-platform NuGet package. As long as you're
+* **Windows x86/x64**
+* **Linux x64** (Ubuntu 18.04)
+* **MacOS x64** (MacOS 10.13)
+
+If your preferred platform is not listed, you will have to build and supply the native binaries yourself. Please consult the *VersionList.txt* file in the **libs** folder for details on what version the library expects. If the library does not work on your platform, please let us know so we can try and get **TeximpNet** running on it!
+
+For legacy applications, the NuGet package also has targets **.NET Framework 4.x** and **.NET Framework 3.5** should you need them. The project is compiled with Visual Studio 2017 on windows, and the DotNet CLI for non-Windows platforms. There is one **build-time only** dependency, an IL Patcher also distributed as a cross-platform NuGet package. As long as you're
 able to build with Visual Studio or the DotNet CLI, the library *should* compile without issue on any platform.
 
 ## Licensing ##
 
-The library is licensed under the [MIT](https://opensource.org/licenses/MIT) license. This means you're free to modify the source and use the library in whatever way you want, as long as you attribute the original authors. The Nvidia Texture Tools library is also licensed under the MIT license. FreeImage is licensed under its [FreeImage Public License](http://freeimage.sourceforge.net/freeimage-license.txt). Please be kind enough to include the licensing text file (it contains both licenses).
+The library is licensed under the [MIT](https://opensource.org/licenses/MIT) license. This means you're free to modify the source and use the library in whatever way you want, as long as you attribute the original authors. The Nvidia Texture Tools library is also licensed under the MIT license. FreeImage is licensed under its [FreeImage Public License](http://freeimage.sourceforge.net/freeimage-license.txt). Please be kind enough to include the licensing text file (it contains all three licenses).
 
 ## Contact ##
 
