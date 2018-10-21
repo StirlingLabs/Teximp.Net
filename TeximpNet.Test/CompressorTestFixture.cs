@@ -93,208 +93,6 @@ namespace TeximpNet.Test
             Assert.True(compressor.Process(outputFile));
         }
 
-        private void GetDigits(List<int> list, int num, int minDigitsCount)
-        {
-            list.Clear();
-
-            while(num > 0)
-            {
-                list.Add(num % 10);
-                num = num / 10;
-            }
-
-            //Pad any zeros
-            while(list.Count < minDigitsCount)
-                list.Add(0);
-
-            list.Reverse();
-        }
-
-        [Fact]
-        public void TestProcessCubemapTexture()
-        {
-            List<String> fileNames = new List<string>();
-            fileNames.Add("right_PosX.png");
-            fileNames.Add("left_NegX.png");
-            fileNames.Add("top_PosY.png");
-            fileNames.Add("bot_NegY.png");
-            fileNames.Add("front_PosZ.png");
-            fileNames.Add("back_NegZ.png");
-
-            Compressor compressor = new Compressor();
-            compressor.Input.GenerateMipmaps = true;
-            compressor.Compression.Format = CompressionFormat.DXT1;
-
-            Surface[] surfaces = new Surface[6];
-
-            //Load in parallel
-            Parallel.For(0, fileNames.Count, (int i) =>
-            {
-                String file = GetInputFile(Path.Combine("Cubemap", fileNames[i]));
-                surfaces[i] = Surface.LoadFromFile(file, true);
-            });
-
-            /*
-            for(int i = 0; i < fileNames.Count; i++)
-            {
-                String file = GetInputFile(Path.Combine("Cubemap", fileNames[i]));
-                surfaces[i] = Surface.LoadFromFile(file, true);
-            }
-            */
-
-            try
-            {
-                compressor.Input.SetData(surfaces);
-            }
-            finally
-            {
-                foreach (Surface s in surfaces)
-                    s.Dispose();
-            }
-
-            String outputFile = GetOutputFile("Nebula.dds");
-            String outputFile2 = GetOutputFile("Nebula-2.dds");
-
-            Assert.True(compressor.Process(outputFile));
-
-            //Look at compressed image processing too
-            DDSContainer ddsContainer;
-            Assert.True(compressor.Process(out ddsContainer));
-            Assert.NotNull(ddsContainer);
-            Assert.True(ddsContainer.MipChains.Count == 6);
-
-            foreach(MipChain mips in ddsContainer.MipChains)
-            {
-                Assert.True(mips.Count == compressor.Input.MipmapCount);
-
-                foreach(MipData mip in mips)
-                    Assert.NotNull(mip);
-            }
-
-            //Save out file so we can compare
-            ddsContainer.Write(outputFile2);
-            ddsContainer.Dispose();
-        }
-
-        [Fact]
-        public void TestProcess2DArrayTexture()
-        {
-            int width = 256;
-            int height = 256;
-            int arrayCount = 10;
-
-            Compressor compressor = new Compressor();
-            compressor.Input.GenerateMipmaps = true;
-            compressor.Input.SetTextureLayout(TextureType.Texture2DArray, width, height, 1, arrayCount);
-            compressor.Compression.Format = CompressionFormat.DXT1;
-
-            //Load the first 10 noise bitmaps
-            String fileNameTemplate = "Noise_Perlin0{0}{1}{2}.bmp";
-            List<int> digits = new List<int>();
-
-            for(int i = 0; i < arrayCount; i++)
-            {
-                GetDigits(digits, i, 3);
-
-                String inputFile = GetInputFile(Path.Combine("3D_Perlin_Noise", String.Format(fileNameTemplate, digits[0].ToString(), digits[1].ToString(), digits[2].ToString())));
-                using(Surface imageFromFile = Surface.LoadFromFile(inputFile, true))
-                {
-                    //Make sure its 32-bit BGRA data
-                    imageFromFile.ConvertTo(ImageConversion.To32Bits);
-
-                    compressor.Input.SetMipmapData(imageFromFile, 0, i);
-                }
-            }
-
-            //Write to file
-            String outputFile = GetOutputFile("2DArray_Perlin_Noise.dds");
-            Assert.True(compressor.Process(outputFile));
-
-            //Also process to list of mipmaps
-            DDSContainer ddsContainer;
-
-            Assert.True(compressor.Process(out ddsContainer));
-            Assert.NotNull(ddsContainer);
-            Assert.True(ddsContainer.MipChains.Count == arrayCount);
-
-            foreach(MipChain mips in ddsContainer.MipChains)
-            {
-                Assert.True(mips.Count == compressor.Input.MipmapCount);
-
-                foreach(MipData mip in mips)
-                    Assert.NotNull(mip);
-            }
-
-            ddsContainer.Dispose();
-        }
-
-        [Fact]
-        public void TestProcess3DTexture()
-        {
-            int width = 256;
-            int height = 256;
-            int depth = 256;
-            int slicePitch = width * height * 4;
-
-            IntPtr data = MemoryHelper.AllocateMemory(width * height * depth * 4);
-            List<int> digits = new List<int>();
-            try
-            {
-                //Load the 256 BMPs
-                String fileNameTemplate = "Noise_Perlin0{0}{1}{2}.bmp";
-
-                IntPtr currSlice = data;
-
-                for(int slice = 0; slice < depth; slice++)
-                {
-                    GetDigits(digits, slice, 3);
-
-                    String inputFile = GetInputFile(Path.Combine("3D_Perlin_Noise", String.Format(fileNameTemplate, digits[0].ToString(), digits[1].ToString(), digits[2].ToString())));
-                    using (Surface imageFromFile = Surface.LoadFromFile(inputFile, true))
-                    {
-                        //Make sure its 32-bit BGRA data
-                        imageFromFile.ConvertTo(ImageConversion.To32Bits);
-
-                        //Copy contents of slice to our 3D image
-                        ImageHelper.CopyColorImageData(currSlice, imageFromFile.DataPtr, imageFromFile.Pitch, 0, imageFromFile.Width, imageFromFile.Height, 1);
-                    }
-
-                    currSlice = MemoryHelper.AddIntPtr(currSlice, slicePitch);
-                }
-
-                //Finally set the 3D image to the compressor
-                Compressor compressor = new Compressor();
-                compressor.Input.GenerateMipmaps = true;
-                compressor.Input.SetTextureLayout(TextureType.Texture3D, width, height, depth);
-                compressor.Input.SetMipmapData(data, true, ImageInfo.From3D(width, height, depth));
-                compressor.Compression.Format = CompressionFormat.BGRA; //DXT1 doesn't seem to load in the DirectX Texture tool...
-
-                String outputFile = GetOutputFile("3D_Perlin_Noise.dds");
-                Assert.True(compressor.Process(outputFile));
-
-                //Also process to list of mipmaps
-                DDSContainer ddsContainer;
-
-                Assert.True(compressor.Process(out ddsContainer));
-                Assert.NotNull(ddsContainer);
-                Assert.True(ddsContainer.MipChains.Count == 1);
-
-                foreach(MipChain mips in ddsContainer.MipChains)
-                {
-                    Assert.True(mips.Count == compressor.Input.MipmapCount);
-
-                    foreach(MipData mip in mips)
-                        Assert.NotNull(mip);
-                }
-
-                ddsContainer.Dispose();
-            }
-            finally
-            {
-                MemoryHelper.FreeMemory(data);
-            }
-        }
-
         [Fact]
         public void TestRGBAData()
         {
@@ -405,9 +203,198 @@ namespace TeximpNet.Test
                 Assert.True(v1.R == v2.R && v1.G == v2.G && v1.B == v2.B && v1.A == v2.A);
             }
 
-            outputImage2.Dispose();
             MemoryHelper.UnpinObject(dataRGBA);
             MemoryHelper.UnpinObject(dataBGRA);
+            outputImage2.Dispose();
+        }
+    }
+
+    //Long running test...separate so can run in parallel
+    public class CompressorTestFixture_TextureCubemapTestFixture : TeximpTestFixture
+    {
+        [Fact]
+        public void TestProcessCubemapTexture()
+        {
+            List<String> fileNames = new List<string>();
+            fileNames.Add("right_PosX.png");
+            fileNames.Add("left_NegX.png");
+            fileNames.Add("top_PosY.png");
+            fileNames.Add("bot_NegY.png");
+            fileNames.Add("front_PosZ.png");
+            fileNames.Add("back_NegZ.png");
+
+            Compressor compressor = new Compressor();
+            compressor.Input.GenerateMipmaps = true;
+            compressor.Compression.Format = CompressionFormat.DXT1;
+
+            Surface[] surfaces = new Surface[6];
+
+            //Load in parallel
+            Parallel.For(0, fileNames.Count, (int i) =>
+            {
+                String file = GetInputFile(Path.Combine("Cubemap", fileNames[i]));
+                surfaces[i] = Surface.LoadFromFile(file, true);
+            });
+
+            try
+            {
+                compressor.Input.SetData(surfaces);
+            }
+            finally
+            {
+                foreach(Surface s in surfaces)
+                    s.Dispose();
+            }
+
+            String outputFile = GetOutputFile("Nebula.dds");
+            String outputFile2 = GetOutputFile("Nebula-2.dds");
+
+            Assert.True(compressor.Process(outputFile));
+
+            //Look at compressed image processing too
+            DDSContainer ddsContainer;
+            Assert.True(compressor.Process(out ddsContainer));
+            Assert.NotNull(ddsContainer);
+            Assert.True(ddsContainer.MipChains.Count == 6);
+
+            foreach(MipChain mips in ddsContainer.MipChains)
+            {
+                Assert.True(mips.Count == compressor.Input.MipmapCount);
+
+                foreach(MipData mip in mips)
+                    Assert.NotNull(mip);
+            }
+
+            //Save out file so we can compare
+            ddsContainer.Write(outputFile2);
+            ddsContainer.Dispose();
+        }
+    }
+
+    //Long running test...separate so can run in parallel
+    public class CompressorTestFixture_TextureArrayTestFixture : TeximpTestFixture
+    {
+        [Fact]
+        public void TestProcess2DArrayTexture()
+        {
+            int width = 256;
+            int height = 256;
+            int arrayCount = 10;
+
+            Compressor compressor = new Compressor();
+            compressor.Input.GenerateMipmaps = true;
+            compressor.Input.SetTextureLayout(TextureType.Texture2DArray, width, height, 1, arrayCount);
+            compressor.Compression.Format = CompressionFormat.DXT1;
+
+            //Load the first 10 noise bitmaps
+            String fileNameTemplate = "Noise_Perlin0{0}{1}{2}.bmp";
+            List<int> digits = new List<int>();
+
+            for(int i = 0; i < arrayCount; i++)
+            {
+                TestHelper.GetDigits(digits, i, 3);
+
+                String inputFile = GetInputFile(Path.Combine("3D_Perlin_Noise", String.Format(fileNameTemplate, digits[0].ToString(), digits[1].ToString(), digits[2].ToString())));
+                using(Surface imageFromFile = Surface.LoadFromFile(inputFile, true))
+                {
+                    //Make sure its 32-bit BGRA data
+                    imageFromFile.ConvertTo(ImageConversion.To32Bits);
+
+                    compressor.Input.SetMipmapData(imageFromFile, 0, i);
+                }
+            }
+
+            //Write to file
+            String outputFile = GetOutputFile("2DArray_Perlin_Noise.dds");
+            Assert.True(compressor.Process(outputFile));
+
+            //Also process to list of mipmaps
+            DDSContainer ddsContainer;
+
+            Assert.True(compressor.Process(out ddsContainer));
+            Assert.NotNull(ddsContainer);
+            Assert.True(ddsContainer.MipChains.Count == arrayCount);
+
+            foreach(MipChain mips in ddsContainer.MipChains)
+            {
+                Assert.True(mips.Count == compressor.Input.MipmapCount);
+
+                foreach(MipData mip in mips)
+                    Assert.NotNull(mip);
+            }
+
+            ddsContainer.Dispose();
+        }
+    }
+
+    //Long running test...separate so can run in parallel
+    public class CompressorTestFixture_Texture3DTestFixture : TeximpTestFixture
+    {
+        [Fact]
+        public void TestProcess3DTexture()
+        {
+            int width = 256;
+            int height = 256;
+            int depth = 256;
+            int slicePitch = width * height * 4;
+
+            IntPtr data = MemoryHelper.AllocateMemory(width * height * depth * 4);
+            List<int> digits = new List<int>();
+            try
+            {
+                //Load the 256 BMPs
+                String fileNameTemplate = "Noise_Perlin0{0}{1}{2}.bmp";
+
+                IntPtr currSlice = data;
+
+                for(int slice = 0; slice < depth; slice++)
+                {
+                    TestHelper.GetDigits(digits, slice, 3);
+
+                    String inputFile = GetInputFile(Path.Combine("3D_Perlin_Noise", String.Format(fileNameTemplate, digits[0].ToString(), digits[1].ToString(), digits[2].ToString())));
+                    using(Surface imageFromFile = Surface.LoadFromFile(inputFile, true))
+                    {
+                        //Make sure its 32-bit BGRA data
+                        imageFromFile.ConvertTo(ImageConversion.To32Bits);
+
+                        //Copy contents of slice to our 3D image
+                        ImageHelper.CopyColorImageData(currSlice, imageFromFile.DataPtr, imageFromFile.Pitch, 0, imageFromFile.Width, imageFromFile.Height, 1);
+                    }
+
+                    currSlice = MemoryHelper.AddIntPtr(currSlice, slicePitch);
+                }
+
+                //Finally set the 3D image to the compressor
+                Compressor compressor = new Compressor();
+                compressor.Input.GenerateMipmaps = true;
+                compressor.Input.SetTextureLayout(TextureType.Texture3D, width, height, depth);
+                compressor.Input.SetMipmapData(data, true, ImageInfo.From3D(width, height, depth));
+                compressor.Compression.Format = CompressionFormat.BGRA; //DXT1 doesn't seem to load in the DirectX Texture tool...
+
+                String outputFile = GetOutputFile("3D_Perlin_Noise.dds");
+                Assert.True(compressor.Process(outputFile));
+
+                //Also process to list of mipmaps
+                DDSContainer ddsContainer;
+
+                Assert.True(compressor.Process(out ddsContainer));
+                Assert.NotNull(ddsContainer);
+                Assert.True(ddsContainer.MipChains.Count == 1);
+
+                foreach(MipChain mips in ddsContainer.MipChains)
+                {
+                    Assert.True(mips.Count == compressor.Input.MipmapCount);
+
+                    foreach(MipData mip in mips)
+                        Assert.NotNull(mip);
+                }
+
+                ddsContainer.Dispose();
+            }
+            finally
+            {
+                MemoryHelper.FreeMemory(data);
+            }
         }
     }
 }

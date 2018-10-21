@@ -21,6 +21,7 @@
 */
 
 using System;
+using System.Collections.Generic;
 using Xunit;
 
 namespace TeximpNet.Test
@@ -64,6 +65,24 @@ namespace TeximpNet.Test
         public static void AssertEquals(float expected, float actual, String msg)
         {
             Assert.True(Math.Abs(expected - actual) <= Tolerance, msg);
+        }
+
+        //Used for identifying a batch of files that are ordered, e.g. XXX_000, XXX_001, XXX_002. So we get # of dimensions to iterate over.
+        public static void GetDigits(List<int> list, int num, int minDigitsCount)
+        {
+            list.Clear();
+
+            while(num > 0)
+            {
+                list.Add(num % 10);
+                num = num / 10;
+            }
+
+            //Pad any zeros
+            while(list.Count < minDigitsCount)
+                list.Add(0);
+
+            list.Reverse();
         }
     }
 }
