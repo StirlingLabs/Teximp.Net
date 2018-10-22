@@ -5,8 +5,8 @@
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>TeximpKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly Condition=" '$(MSBuildRuntimeType)' != 'Core'">true</SignAssembly>
+    <AssemblyOriginatorKeyFile Condition=" '$(MSBuildRuntimeType)' != 'Core'">TeximpKey.snk</AssemblyOriginatorKeyFile>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Nicholas Woodfield</Authors>
     <Company />
