@@ -120,11 +120,11 @@ namespace TeximpNet.Unmanaged
         #region Allocate / Clone / Unload
 
         /// <summary>
-        /// 
+        /// Allocates a new, empty FreeImage bitmap.
         /// </summary>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        /// <param name="bpp"></param>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="bpp">Bits per pixel</param>
         /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public IntPtr Allocate(int width, int height, int bpp)
         {
@@ -132,14 +132,14 @@ namespace TeximpNet.Unmanaged
         }
 
         /// <summary>
-        /// 
+        /// Allocates a new, empty FreeImage bitmap.
         /// </summary>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        /// <param name="bpp"></param>
-        /// <param name="red_mask"></param>
-        /// <param name="green_mask"></param>
-        /// <param name="blue_mask"></param>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="bpp">Bits per pixel</param>
+        /// <param name="red_mask">Specifies bit layout - where in the pixel is the red component.</param>
+        /// <param name="green_mask">Specifies bit layout - where in the pixel is the green component.</param>
+        /// <param name="blue_mask">Specifies bit layout - where in the pixel is the blue component.</param>
         /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public IntPtr Allocate(int width, int height, int bpp, uint red_mask, uint green_mask, uint blue_mask)
         {
@@ -151,20 +151,20 @@ namespace TeximpNet.Unmanaged
         }
 
         /// <summary>
-        /// 
+        /// Allocates a new, empty FreeImage bitmap.
         /// </summary>
-        /// <param name="imageType"></param>
-        /// <param name="width"></param>
-        /// <param name="height"></param>
-        /// <param name="bpp"></param>
-        /// <param name="red_mask"></param>
-        /// <param name="green_mask"></param>
-        /// <param name="blue_mask"></param>
+        /// <param name="imageType">Specify image type (bitmap, float, etc)</param>
+        /// <param name="width">Width of the image.</param>
+        /// <param name="height">Height of the image.</param>
+        /// <param name="bpp">Bits per pixel</param>
+        /// <param name="red_mask">Specifies bit layout - where in the pixel is the red component.</param>
+        /// <param name="green_mask">Specifies bit layout - where in the pixel is the green component.</param>
+        /// <param name="blue_mask">Specifies bit layout - where in the pixel is the blue component.</param>
         /// <returns>Pointer to FreeImage bitmap, or null if the operation was not successful.</returns>
         public IntPtr AllocateT(ImageType imageType, int width, int height, int bpp, uint red_mask, uint green_mask, uint blue_mask)
         {
             LoadIfNotLoaded();
-
+            
             Functions.FreeImage_AllocateT func = GetFunction<Functions.FreeImage_AllocateT>(FunctionNames.FreeImage_AllocateT);
 
             return func(imageType, width, height, bpp, red_mask, green_mask, blue_mask);
@@ -211,7 +211,7 @@ namespace TeximpNet.Unmanaged
         /// <param name="top">Topmost texel.</param>
         /// <param name="right">Rightmost texel.</param>
         /// <param name="bottom">Bottommost texel.</param>
-        /// <returns></returns>
+        /// <returns>Native pointer to new bitmap.</returns>
         public IntPtr Copy(IntPtr bitmap, int left, int top, int right, int bottom)
         {
             if(bitmap == IntPtr.Zero)
@@ -1145,6 +1145,7 @@ namespace TeximpNet.Unmanaged
         /// </summary>
         /// <param name="bitmap">Pointer to FreeImage bitmap.</param>
         /// <param name="angle">Angle to rotate, in degrees.</param>
+        /// <returns>Native point to new bitmap.</returns>
         public IntPtr Rotate(IntPtr bitmap, double angle)
         {
             if(bitmap == IntPtr.Zero)

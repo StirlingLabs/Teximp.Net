@@ -31,7 +31,7 @@
   <ItemGroup>
     <Content Include="..\ChangeLog.txt" Link="nuget\ChangeLog.txt" PackagePath="" />
     <Content Include="..\License.txt" Link="nuget\License.txt" PackagePath="" />
-    <Content Include="..\Docs\TeximpNet Documentation %28April 2018%29.chm" Link="nuget\TeximpNet Documentation %28April 2018%29.chm" PackagePath="" />
+    <Content Include="..\Docs\TeximpNet Documentation %28October 2018%29.chm" Link="nuget\TeximpNet Documentation %28October 2018%29.chm" PackagePath="" />
     <Content Include="..\libs\FreeImage\win-x64\FreeImage.dll" Link="nuget\runtimes\win-x64\native\FreeImage.dll" PackagePath="runtimes\win-x64\native\" />
     <Content Include="..\libs\FreeImage\win-x86\FreeImage.dll" Link="nuget\runtimes\win-x86\native\FreeImage.dll" PackagePath="runtimes\win-x86\native\" />
     <Content Include="..\libs\FreeImage\linux-x64\libFreeImage.so" Link="nuget\runtimes\linux-x64\native\libFreeImage.so" PackagePath="runtimes\linux-x64\native\" />

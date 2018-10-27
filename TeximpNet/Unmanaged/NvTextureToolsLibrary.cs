@@ -733,7 +733,7 @@ namespace TeximpNet.Unmanaged
         /// <summary>
         /// Gets the NVTT unmanaged library version.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Version number</returns>
         public uint GetVersion()
         {
             LoadIfNotLoaded();
