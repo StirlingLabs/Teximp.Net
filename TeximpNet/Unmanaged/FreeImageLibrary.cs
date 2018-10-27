@@ -32,21 +32,16 @@ namespace TeximpNet.Unmanaged
     public sealed class FreeImageLibrary : UnmanagedLibrary
     {
         private static readonly Object s_sync = new Object();
-        private bool? m_isLittleEndian;
 
         /// <summary>
-        /// Default name of the 32-bit unmanaged library. Based on runtime implementation the prefix ("lib" on non-windows) and extension (.dll, .so, .dylib) will be appended automatically.
+        /// Default name of the unmanaged library. Based on runtime implementation the prefix ("lib" on non-windows) and extension (.dll, .so, .dylib) will be appended automatically.
         /// </summary>
-        private const String Default32BitName = "FreeImage32";
-
-        /// <summary>
-        /// Default name of the 64-bit unmanaged library. Based on runtime implementation the prefix ("lib" on non-windows) and extension (.dll, .so, .dylib) will be appended automatically.
-        /// </summary>
-        private const String Default64BitName = "FreeImage64";
+        private const String DefaultLibName = "FreeImage";
 
         private static FreeImageLibrary s_instance;
 
         private FreeImageIOHandler m_ioHandler;
+        private bool? m_isLittleEndian;
 
         /// <summary>
         /// Gets the instance of the FreeImage library. This is thread-safe.
@@ -90,15 +85,15 @@ namespace TeximpNet.Unmanaged
             }
         }
 
-        private FreeImageLibrary(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes) 
-            : base(default32BitName, default64BitName, unmanagedFunctionDelegateTypes)
+        private FreeImageLibrary(String defaultLibName, Type[] unmanagedFunctionDelegateTypes) 
+            : base(defaultLibName, unmanagedFunctionDelegateTypes)
         {
             m_ioHandler = new FreeImageIOHandler(Is64Bit && (GetPlatform() != Platform.Windows));
         }
 
         private static FreeImageLibrary CreateInstance()
         {
-            return new FreeImageLibrary(Default32BitName, Default64BitName, PlatformHelper.GetNestedTypes(typeof(Functions)));
+            return new FreeImageLibrary(DefaultLibName, PlatformHelper.GetNestedTypes(typeof(Functions)));
         }
 
         /// <summary>

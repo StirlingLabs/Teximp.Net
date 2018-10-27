@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2016-2018 TeximpNet - Nicholas Woodfield
+* Copyright (c) 2012-2018 TeximpNet - Nicholas Woodfield
 * 
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -38,9 +38,9 @@ namespace TeximpNet.Unmanaged
         Windows,
 
         /// <summary>
-        /// Unix platform.
+        /// Linux platform.
         /// </summary>
-        Unix,
+        Linux,
 
         /// <summary>
         /// Mac platform.
@@ -87,6 +87,7 @@ namespace TeximpNet.Unmanaged
         private static Object s_defaultLoadSync = new Object();
 
         private UnmanagedLibraryImplementation m_impl;
+        private UnmanagedLibraryResolver m_resolver;
         private String m_libraryPath = String.Empty;
         private volatile bool m_checkNeedsLoading = true;
 
@@ -112,35 +113,52 @@ namespace TeximpNet.Unmanaged
         }
 
         /// <summary>
-        /// Queries the default path to the 32-bit unmanaged library DLL.
+        /// Gets the default name of the unmanaged library DLL. This is dependent based on the platform extension and name prefix. Additional
+        /// names can be set in the <see cref="UnmanagedLibraryResolver"/> (e.g. to load versioned DLLs)
         /// </summary>
-        public String DefaultLibraryPath32Bit
+        public String DefaultLibraryName
         {
             get
             {
-                return m_impl.DefaultLibraryPath32Bit;
+                return m_impl.DefaultLibraryName;
             }
         }
 
         /// <summary>
-        /// Queries the default path to the 64-bit unmanaged library DLL.
-        /// </summary>
-        public String DefaultLibraryPath64bit
-        {
-            get
-            {
-                return m_impl.DefaultLibraryPath64Bit;
-            }
-        }
-
-        /// <summary>
-        /// Queries the path to the unmanaged library DLL that is currently loaded.
+        /// Gets the path to the unmanaged library DLL that is currently loaded.
         /// </summary>
         public String LibraryPath
         {
             get
             {
                 return m_libraryPath;
+            }
+        }
+
+        /// <summary>
+        /// Gets the resolver used to find the unmanaged library DLL when loading.
+        /// </summary>
+        public UnmanagedLibraryResolver Resolver
+        {
+            get
+            {
+                return m_resolver;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets whether an <see cref="TeximpException"/> is thrown if the unmanaged DLL fails to load for whatever reason. By
+        /// default this is true.
+        /// </summary>
+        public bool ThrowOnLoadFailure
+        {
+            get
+            {
+                return m_impl.ThrowOnLoadFailure;
+            }
+            set
+            {
+                m_impl.ThrowOnLoadFailure = value;
             }
         }
 
@@ -158,12 +176,11 @@ namespace TeximpNet.Unmanaged
         /// <summary>
         /// Constructs a new <see cref="UnmanagedLibrary"/>.
         /// </summary>
-        /// <param name="default32BitName">Default name (NOT path) of the 32-bit unmanaged library.</param>
-        /// <param name="default64BitName">Default name (NOT path) of the 64-bit unmanaged library.</param>
+        /// <param name="defaultName">Default name (NOT path) of the unmanaged library.</param>
         /// <param name="unmanagedFunctionDelegateTypes">Delegate types to instantiate and load.</param>
-        protected UnmanagedLibrary(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes)
+        protected UnmanagedLibrary(String defaultName, Type[] unmanagedFunctionDelegateTypes)
         {
-            CreateRuntimeImplementation(default32BitName, default64BitName, unmanagedFunctionDelegateTypes);
+            CreateRuntimeImplementation(defaultName, unmanagedFunctionDelegateTypes);
         }
 
         /// <summary>
@@ -172,25 +189,26 @@ namespace TeximpNet.Unmanaged
         /// <returns>Platform enumeration.</returns>
         public static Platform GetPlatform()
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                 return Platform.Windows;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                return Platform.Unix;
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                return Platform.Linux;
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            if(RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 return Platform.Mac;
 
             throw new InvalidOperationException("Cannot determine OS-specific implementation.");
         }
 
         /// <summary>
-        /// Loads the unmanaged library using the default library paths based on the OS bitness.
+        /// Loads the unmanaged library using the <see cref="UnmanagedLibraryResolver"/>.
         /// </summary>
         /// <returns>True if the library was found and successfully loaded.</returns>
         public bool LoadLibrary()
         {
-            return LoadLibrary((Is64Bit) ? DefaultLibraryPath64bit : DefaultLibraryPath32Bit);
+            String libPath = m_resolver.ResolveLibraryPath(DefaultLibraryName);
+            return LoadLibrary(libPath);
         }
 
         /// <summary>
@@ -211,7 +229,7 @@ namespace TeximpNet.Unmanaged
         /// <returns>True if the library was found and successfully loaded.</returns>
         public bool LoadLibrary(String libPath)
         {
-            if (IsLibraryLoaded)
+            if(IsLibraryLoaded)
             {
                 //Ignore repeated calls...but do assert
                 System.Diagnostics.Debug.Assert(false, "Library already loaded");
@@ -219,7 +237,7 @@ namespace TeximpNet.Unmanaged
             }
 
             //Automatically append extension if necessary
-            if(!Path.HasExtension(libPath))
+            if(!String.IsNullOrEmpty(libPath) && !Path.HasExtension(libPath))
                 libPath = Path.ChangeExtension(libPath, m_impl.DllExtension);
 
             if(m_impl.LoadLibrary(libPath))
@@ -237,10 +255,10 @@ namespace TeximpNet.Unmanaged
         /// <summary>
         /// Frees the unmanaged library that is currently loaded.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>True if the library was sucessfully freed.</returns>
         public bool FreeLibrary()
         {
-            if (IsLibraryLoaded)
+            if(IsLibraryLoaded)
             {
                 OnLibraryFreed();
 
@@ -272,12 +290,12 @@ namespace TeximpNet.Unmanaged
         protected void LoadIfNotLoaded()
         {
             //Check the loading flag so we don't have to lock every time we want to talk to the native library...
-            if (!m_checkNeedsLoading)
+            if(!m_checkNeedsLoading)
                 return;
 
-            lock (s_defaultLoadSync)
+            lock(s_defaultLoadSync)
             {
-                if (!IsLibraryLoaded)
+                if(!IsLibraryLoaded)
                     LoadLibrary();
 
                 m_checkNeedsLoading = false;
@@ -291,7 +309,7 @@ namespace TeximpNet.Unmanaged
         {
             EventHandler evt = LibraryLoaded;
 
-            if (evt != null)
+            if(evt != null)
                 evt(this, EventArgs.Empty);
         }
 
@@ -302,22 +320,25 @@ namespace TeximpNet.Unmanaged
         {
             EventHandler evt = LibraryFreed;
 
-            if (evt != null)
+            if(evt != null)
                 evt(this, EventArgs.Empty);
         }
 
-        private void CreateRuntimeImplementation(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes)
+        private void CreateRuntimeImplementation(String defaultLibName, Type[] unmanagedFunctionDelegateTypes)
         {
-            switch(GetPlatform())
+            Platform platform = GetPlatform();
+            m_resolver = new UnmanagedLibraryResolver(platform);
+
+            switch(platform)
             {
                 case Platform.Windows:
-                    m_impl = new UnmanagedWindowsLibraryImplementation(default32BitName, default64BitName, unmanagedFunctionDelegateTypes);
+                    m_impl = new UnmanagedWindowsLibraryImplementation(defaultLibName, unmanagedFunctionDelegateTypes);
                     break;
-                case Platform.Unix:
-                    m_impl = new UnmanagedLinuxLibraryImplementation(default32BitName, default64BitName, unmanagedFunctionDelegateTypes);
+                case Platform.Linux:
+                    m_impl = new UnmanagedLinuxLibraryImplementation(defaultLibName, unmanagedFunctionDelegateTypes);
                     break;
                 case Platform.Mac:
-                    m_impl = new UnmanagedMacLibraryImplementation(default32BitName, default64BitName, unmanagedFunctionDelegateTypes);
+                    m_impl = new UnmanagedMacLibraryImplementation(defaultLibName, unmanagedFunctionDelegateTypes);
                     break;
                 default:
                     throw new PlatformNotSupportedException();
@@ -328,12 +349,12 @@ namespace TeximpNet.Unmanaged
 
         internal abstract class UnmanagedLibraryImplementation : IDisposable
         {
-            private String m_default32Path;
-            private String m_default64Path;
+            private String m_defaultLibName;
             private Type[] m_unmanagedFunctionDelegateTypes;
             private Dictionary<String, Delegate> m_nameToUnmanagedFunction;
             private IntPtr m_libraryHandle;
             private bool m_isDisposed;
+            private bool m_throwOnLoadFailure;
 
             public bool IsLibraryLoaded
             {
@@ -351,19 +372,23 @@ namespace TeximpNet.Unmanaged
                 }
             }
 
-            public String DefaultLibraryPath32Bit
+            public String DefaultLibraryName
             {
                 get
                 {
-                    return m_default32Path;
+                    return m_defaultLibName;
                 }
             }
 
-            public String DefaultLibraryPath64Bit
+            public bool ThrowOnLoadFailure
             {
                 get
                 {
-                    return m_default64Path;
+                    return m_throwOnLoadFailure;
+                }
+                set
+                {
+                    m_throwOnLoadFailure = value;
                 }
             }
 
@@ -371,22 +396,17 @@ namespace TeximpNet.Unmanaged
 
             public virtual String DllPrefix { get { return String.Empty; } }
 
-            public UnmanagedLibraryImplementation(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes)
+            public UnmanagedLibraryImplementation(String defaultLibName, Type[] unmanagedFunctionDelegateTypes)
             {
-                default32BitName = DllPrefix + Path.ChangeExtension(default32BitName, DllExtension);
-                default64BitName = DllPrefix + Path.ChangeExtension(default64BitName, DllExtension);
-
-                //Resolve paths, find TeximpNet.dll. Default path is in the same directory
-                String managedAssemblyPath = PlatformHelper.GetAppBaseDirectory();
-
-                m_default32Path = Path.Combine(managedAssemblyPath, default32BitName);
-                m_default64Path = Path.Combine(managedAssemblyPath, default64BitName);
+                m_defaultLibName = DllPrefix + Path.ChangeExtension(defaultLibName, DllExtension);
 
                 m_unmanagedFunctionDelegateTypes = unmanagedFunctionDelegateTypes;
 
                 m_nameToUnmanagedFunction = new Dictionary<String, Delegate>();
                 m_isDisposed = false;
                 m_libraryHandle = IntPtr.Zero;
+
+                m_throwOnLoadFailure = true;
             }
 
             ~UnmanagedLibraryImplementation()
@@ -396,16 +416,16 @@ namespace TeximpNet.Unmanaged
 
             public T GetFunction<T>(String functionName) where T : class
             {
-                if (String.IsNullOrEmpty(functionName))
+                if(String.IsNullOrEmpty(functionName))
                     return null;
 
                 Delegate function;
-                if (!m_nameToUnmanagedFunction.TryGetValue(functionName, out function))
+                if(!m_nameToUnmanagedFunction.TryGetValue(functionName, out function))
                     return null;
 
-                Object obj = (Object)function;
+                Object obj = (Object) function;
 
-                return (T)obj;
+                return (T) obj;
             }
 
             public bool LoadLibrary(String path)
@@ -414,7 +434,7 @@ namespace TeximpNet.Unmanaged
 
                 m_libraryHandle = NativeLoadLibrary(path);
 
-                if (m_libraryHandle != IntPtr.Zero)
+                if(m_libraryHandle != IntPtr.Zero)
                     LoadFunctions();
 
                 return m_libraryHandle != IntPtr.Zero;
@@ -427,12 +447,12 @@ namespace TeximpNet.Unmanaged
 
             private bool FreeLibrary(bool clearFunctions)
             {
-                if (m_libraryHandle != IntPtr.Zero)
+                if(m_libraryHandle != IntPtr.Zero)
                 {
                     NativeFreeLibrary(m_libraryHandle);
                     m_libraryHandle = IntPtr.Zero;
 
-                    if (clearFunctions)
+                    if(clearFunctions)
                         m_nameToUnmanagedFunction.Clear();
 
                     return true;
@@ -443,7 +463,7 @@ namespace TeximpNet.Unmanaged
 
             private void LoadFunctions()
             {
-                foreach (Type funcType in m_unmanagedFunctionDelegateTypes)
+                foreach(Type funcType in m_unmanagedFunctionDelegateTypes)
                 {
                     String funcName = GetUnmanagedName(funcType);
                     if(String.IsNullOrEmpty(funcName))
@@ -460,7 +480,7 @@ namespace TeximpNet.Unmanaged
                     }
 
                     Delegate function;
-                    if (!m_nameToUnmanagedFunction.TryGetValue(funcName, out function))
+                    if(!m_nameToUnmanagedFunction.TryGetValue(funcName, out function))
                     {
                         function = PlatformHelper.GetDelegateForFunctionPointer(procAddr, funcType);
                         m_nameToUnmanagedFunction.Add(funcName, function);
@@ -471,9 +491,9 @@ namespace TeximpNet.Unmanaged
             private String GetUnmanagedName(Type funcType)
             {
                 object[] attributes = PlatformHelper.GetCustomAttributes(funcType, typeof(UnmanagedFunctionNameAttribute), false);
-                foreach (object attr in attributes)
+                foreach(object attr in attributes)
                 {
-                    if (attr is UnmanagedFunctionNameAttribute)
+                    if(attr is UnmanagedFunctionNameAttribute)
                         return (attr as UnmanagedFunctionNameAttribute).UnmanagedFunctionName;
                 }
 
@@ -493,7 +513,7 @@ namespace TeximpNet.Unmanaged
 
             protected virtual void Dispose(bool isDisposing)
             {
-                if (!m_isDisposed)
+                if(!m_isDisposed)
                 {
                     FreeLibrary(isDisposing);
 
@@ -502,9 +522,9 @@ namespace TeximpNet.Unmanaged
             }
         }
 
-#endregion
+        #endregion
 
-#region Windows Implementation
+        #region Windows Implementation
 
         internal sealed class UnmanagedWindowsLibraryImplementation : UnmanagedLibraryImplementation
         {
@@ -516,8 +536,8 @@ namespace TeximpNet.Unmanaged
                 }
             }
 
-            public UnmanagedWindowsLibraryImplementation(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes)
-                : base(default32BitName, default64BitName, unmanagedFunctionDelegateTypes)
+            public UnmanagedWindowsLibraryImplementation(String defaultLibName, Type[] unmanagedFunctionDelegateTypes)
+                : base(defaultLibName, unmanagedFunctionDelegateTypes)
             {
             }
 
@@ -525,17 +545,25 @@ namespace TeximpNet.Unmanaged
             {
                 IntPtr libraryHandle = WinLoadLibrary(path);
 
-                if(libraryHandle == IntPtr.Zero)
+                if(libraryHandle == IntPtr.Zero && ThrowOnLoadFailure)
                 {
-                    int hr = Marshal.GetHRForLastWin32Error();
-                    Exception innerException = Marshal.GetExceptionForHR(hr);
+                    Exception innerException = null;
 
-                    if (innerException != null)
+                    //Keep the try-catch in case we're running on Mono. We're providing our own implementation of "Marshal.GetHRForLastWin32Error" which is NOT implemented
+                    //in mono, but let's just be cautious.
+                    try
+                    {
+                        int hr = GetHRForLastWin32Error();
+                        innerException = Marshal.GetExceptionForHR(hr);
+                    }
+                    catch(Exception) { }
+
+                    if(innerException != null)
                         throw new TeximpException(String.Format("Error loading unmanaged library from path: {0}\n\n{1}", path, innerException.Message), innerException);
                     else
                         throw new TeximpException(String.Format("Error loading unmanaged library from path: {0}", path));
                 }
-                
+
                 return libraryHandle;
             }
 
@@ -549,7 +577,19 @@ namespace TeximpNet.Unmanaged
                 FreeLibrary(handle);
             }
 
-#region Native Methods
+            private int GetHRForLastWin32Error()
+            {
+                //Mono, for some reason, throws in Marshal.GetHRForLastWin32Error(), but it should implement GetLastWin32Error, which is recommended than
+                //p/invoking it ourselves when SetLastError is set in DllImport
+                int dwLastError = Marshal.GetLastWin32Error();
+
+                if((dwLastError & 0x80000000) == 0x80000000)
+                    return dwLastError;
+                else
+                    return (dwLastError & 0x0000FFFF) | unchecked((int) 0x80070000);
+            }
+
+            #region Native Methods
 
             [DllImport("kernel32.dll", CharSet = CharSet.Ansi, BestFitMapping = false, SetLastError = true, EntryPoint = "LoadLibrary")]
             private static extern IntPtr WinLoadLibrary(String fileName);
@@ -561,12 +601,12 @@ namespace TeximpNet.Unmanaged
             [DllImport("kernel32.dll")]
             private static extern IntPtr GetProcAddress(IntPtr hModule, String procName);
 
-#endregion
+            #endregion
         }
 
-#endregion
+        #endregion
 
-#region Linux Implementation
+        #region Linux Implementation
 
         internal sealed class UnmanagedLinuxLibraryImplementation : UnmanagedLibraryImplementation
         {
@@ -586,8 +626,8 @@ namespace TeximpNet.Unmanaged
                 }
             }
 
-            public UnmanagedLinuxLibraryImplementation(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes)
-                : base(default32BitName, default64BitName, unmanagedFunctionDelegateTypes)
+            public UnmanagedLinuxLibraryImplementation(String defaultLibName, Type[] unmanagedFunctionDelegateTypes)
+                : base(defaultLibName, unmanagedFunctionDelegateTypes)
             {
             }
 
@@ -595,7 +635,7 @@ namespace TeximpNet.Unmanaged
             {
                 IntPtr libraryHandle = dlopen(path, RTLD_NOW);
 
-                if(libraryHandle == IntPtr.Zero)
+                if(libraryHandle == IntPtr.Zero && ThrowOnLoadFailure)
                 {
                     IntPtr errPtr = dlerror();
                     String msg = Marshal.PtrToStringAnsi(errPtr);
@@ -618,7 +658,7 @@ namespace TeximpNet.Unmanaged
                 dlclose(handle);
             }
 
-#region Native Methods
+            #region Native Methods
 
             [DllImport("libdl.so")]
             private static extern IntPtr dlopen(String fileName, int flags);
@@ -634,12 +674,12 @@ namespace TeximpNet.Unmanaged
 
             private const int RTLD_NOW = 2;
 
-#endregion
+            #endregion
         }
 
-#endregion
+        #endregion
 
-#region Mac Implementation
+        #region Mac Implementation
 
         internal sealed class UnmanagedMacLibraryImplementation : UnmanagedLibraryImplementation
         {
@@ -659,8 +699,8 @@ namespace TeximpNet.Unmanaged
                 }
             }
 
-            public UnmanagedMacLibraryImplementation(String default32BitName, String default64BitName, Type[] unmanagedFunctionDelegateTypes)
-                : base(default32BitName, default64BitName, unmanagedFunctionDelegateTypes)
+            public UnmanagedMacLibraryImplementation(String defaultLibName, Type[] unmanagedFunctionDelegateTypes)
+                : base(defaultLibName, unmanagedFunctionDelegateTypes)
             {
             }
 
@@ -668,11 +708,11 @@ namespace TeximpNet.Unmanaged
             {
                 IntPtr libraryHandle = dlopen(path, RTLD_NOW);
 
-                if (libraryHandle == IntPtr.Zero)
+                if(libraryHandle == IntPtr.Zero && ThrowOnLoadFailure)
                 {
                     IntPtr errPtr = dlerror();
                     String msg = Marshal.PtrToStringAnsi(errPtr);
-                    if (!String.IsNullOrEmpty(msg))
+                    if(!String.IsNullOrEmpty(msg))
                         throw new TeximpException(String.Format("Error loading unmanaged library from path: {0}\n\n{1}", path, msg));
                     else
                         throw new TeximpException(String.Format("Error loading unmanaged library from path: {0}", path));
@@ -691,7 +731,7 @@ namespace TeximpNet.Unmanaged
                 dlclose(handle);
             }
 
-#region Native Methods
+            #region Native Methods
 
             [DllImport("libSystem.B.dylib")]
             private static extern IntPtr dlopen(String fileName, int flags);
@@ -707,9 +747,9 @@ namespace TeximpNet.Unmanaged
 
             private const int RTLD_NOW = 2;
 
-#endregion
+            #endregion
         }
 
-#endregion
+        #endregion
     }
 }

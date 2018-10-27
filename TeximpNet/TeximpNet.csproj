@@ -10,15 +10,18 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Nicholas Woodfield</Authors>
     <Company />
-    <Version>1.3.0</Version>
+    <Version>1.4.0-rc1</Version>
     <PackageLicenseUrl>http://opensource.org/licenses/mit-license.php</PackageLicenseUrl>
     <Copyright>Copyright © 2016-2018 Nicholas Woodfield</Copyright>
     <PackageIconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</PackageIconUrl>
     <PackageProjectUrl>http://bitbucket.org/Starnick/teximpnet</PackageProjectUrl>
     <RepositoryUrl>https://bitbucket.org/Starnick/teximpnet.git</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
-    <Description>A .NET texture IO and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.17.0 of FreeImage and version 2.1.1 of NVTT.</Description>
-    <PackageTags>Importers 3D Content Assets Texture Image Compression DDS DXT</PackageTags>
+    <Description>A .NET texture IO and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.18.0 of FreeImage and a (modified) version 2.1.1 of NVTT.</Description>
+    <PackageTags>Importers 3D Graphics Content Assets Texture Cubemap Image Compression DDS DXT BMP JPG JPEG TGA PNG GIF RAW TIFF</PackageTags>
+    <RootNamespace>TeximpNet</RootNamespace>
+    <AssemblyName>TeximpNet</AssemblyName>
+    <Title>TeximpNet</Title>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Release'">
@@ -26,18 +29,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="..\ChangeLog.txt" Link="build\ChangeLog.txt" PackagePath="" />
-    <Content Include="..\License.txt" Link="build\License.txt" PackagePath="" />
-    <Content Include="..\Docs\TeximpNet Documentation %28April 2018%29.chm" Link="build\TeximpNet Documentation %28April 2018%29.chm" PackagePath="" />
-    <Content Include="..\libs\FreeImage\win-x64\FreeImage64.dll" Link="build\native\win-x64\FreeImage64.dll" PackagePath="build\native\win-x64\" />
-    <Content Include="..\libs\FreeImage\win-x86\FreeImage32.dll" Link="build\native\win-x86\FreeImage32.dll" PackagePath="build\native\win-x86\" />
-    <Content Include="..\libs\FreeImage\linux-x64\libFreeImage64.so" Link="build\native\linux-x64\libFreeImage64.so" PackagePath="build\native\linux-x64\" />
-    <Content Include="..\libs\FreeImage\osx-x64\libFreeImage64.dylib" Link="build\native\osx-x64\libFreeImage64.dylib" PackagePath="build\native\osx-x64\" />
-    <Content Include="..\libs\NvidiaTextureTools\win-x64\nvtt64.dll" Link="build\native\win-x64\nvtt64.dll" PackagePath="build\native\win-x64\" />
-    <Content Include="..\libs\NvidiaTextureTools\win-x86\nvtt32.dll" Link="build\native\win-x86\nvtt32.dll" PackagePath="build\native\win-x86\" />
-    <Content Include="..\libs\NvidiaTextureTools\linux-x64\libnvtt64.so" Link="build\native\linux-x64\libnvtt64.so" PackagePath="build\native\linux-x64\" />
-    <Content Include="..\libs\NvidiaTextureTools\osx-x64\libnvtt64.dylib" Link="build\native\osx-x64\libnvtt64.dylib" PackagePath="build\native\osx-x64\" />
-    <Content Include="TeximpNet.targets" PackagePath="build\" />
+    <Content Include="..\ChangeLog.txt" Link="nuget\ChangeLog.txt" PackagePath="" />
+    <Content Include="..\License.txt" Link="nuget\License.txt" PackagePath="" />
+    <Content Include="..\Docs\TeximpNet Documentation %28April 2018%29.chm" Link="nuget\TeximpNet Documentation %28April 2018%29.chm" PackagePath="" />
+    <Content Include="..\libs\FreeImage\win-x64\FreeImage.dll" Link="nuget\runtimes\win-x64\native\FreeImage.dll" PackagePath="runtimes\win-x64\native\" />
+    <Content Include="..\libs\FreeImage\win-x86\FreeImage.dll" Link="nuget\runtimes\win-x86\native\FreeImage.dll" PackagePath="runtimes\win-x86\native\" />
+    <Content Include="..\libs\FreeImage\linux-x64\libFreeImage.so" Link="nuget\runtimes\linux-x64\native\libFreeImage.so" PackagePath="runtimes\linux-x64\native\" />
+    <Content Include="..\libs\FreeImage\osx-x64\libFreeImage.dylib" Link="nuget\runtimes\osx-x64\native\libFreeImage.dylib" PackagePath="runtimes\osx-x64\native\" />
+    <Content Include="..\libs\NvidiaTextureTools\win-x64\nvtt.dll" Link="nuget\runtimes\win-x64\native\nvtt.dll" PackagePath="runtimes\win-x64\native\" />
+    <Content Include="..\libs\NvidiaTextureTools\win-x86\nvtt.dll" Link="nuget\runtimes\win-x86\native\nvtt.dll" PackagePath="runtimes\win-x86\native\" />
+    <Content Include="..\libs\NvidiaTextureTools\linux-x64\libnvtt.so" Link="nuget\runtimes\linux-x64\native\libnvtt.so" PackagePath="runtimes\linux-x64\native\" />
+    <Content Include="..\libs\NvidiaTextureTools\osx-x64\libnvtt.dylib" Link="nuget\runtimes\osx-x64\native\libnvtt.dylib" PackagePath="runtimes\osx-x64\native\" />
+    <Content Include="TeximpNet.targets"  Link="nuget\build\TeximpNet.targets" PackagePath="build\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -49,7 +52,6 @@
   <!-- Copy targets and native files to a build folder so unit tests can access it (overall will setup a mock nuget folder structure)  -->
   <Target Name="CopyBuildFiles" AfterTargets="AfterBuild">
     <Copy SourceFiles="%(Content.Identity)" DestinationFiles="bin\$(Configuration)\%(Content.Link)" SkipUnchangedFiles="true" Condition="'%(Content.Link)' != ''" />
-    <Copy SourceFiles="TeximpNet.targets" DestinationFolder="bin\$(Configuration)\build" SkipUnchangedFiles="true" />
   </Target>
 
 </Project>

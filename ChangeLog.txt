@@ -2,6 +2,53 @@
 CHANGELOG
 ----------------------------------------------------------------------
 
+1.4 (10/27/2018)
+
+	- Updated FreeImage to 3.18.0
+	- Updated nvtt to a *CUSTOM* version of 2.1.1 (https://github.com/Starnick/nvidia-texture-tools), which modifies the C-API slightly to expose 2D texture array support in the compressor
+		- A PR has been submitted to the official repository, the C-API hasn't been updated in some time as new features have been added to the C++ API
+	- NvTextureToolsLibrary has been updated to work with C-API changes, as well as some missing enums have been added
+	- Added x64 linux native binary, x64 macOS native binary
+		- Tested on Ubuntu 18.04 and MacOS 10.13 (High Sierra)
+	- Added "ThrowOnLoadFailure" to configure getting back a "false" if native library fails to load or throw an exception (the default). Mono should no longer
+	  throw a "NotImplemented" exception because of trying to get the error code from windows.
+	- !!Breaking Change!! Native DLLs are deployed differently and resolved at runtime differently
+		- Removed "DefaultLibraryPathXXBit" properties from UnmanagedLibrary, they are meaningless now (and probably not used)
+		- Introduced "UnmanagedLibraryResolver" that lets you set the following to completely configure native DLL loading:
+				1. Multiple probing paths
+				2. Multiple fallback library names (e.g. versioned binaries)
+				3. Override name if the default native library name is not good enough for your tastes.
+		- Search order of the native DLL is as follows:
+				1. Search user-specified probing paths
+				2. Search {AppBaseDirectory}/runtimes/{RID}/native/
+				3. Search {AppBaseDirectory}/
+				4. Search nuget cache based on assembly name/informational version ({UserProfile}/.nuget/packages/TeximpNet/{PackageVersion}/runtimes/{RID}/native/)
+				5. If all above failed, return the given name of the DLL (or override name) and let the OS try and find it (different OS' may have different strategies).
+		- The resolver is only used in UnmanagedLibrary.LoadLibrary(). The other two overloads still take in a user-supplied path/to/your/DLL.
+		- Native DLLs are now deployed in the "runtimes" folder of the nuget package. This means they are now picked up as dependencies by netcore (*.deps.json)
+			and automatically get copied during the "dotnet publish" command. During development, the system will try and locate the native DLLs in the nuget cache
+			(.net framework 3.5/4.0 targets still use the MSBuild targets file to copy the runtime folder to the output folder). The folder structure looks like this:
+				- runtimes/win-x64/native/nvtt.dll
+				- runtimes/win-x86/native/nvtt.dll
+				- runtimes/osx-x64/native/libnvtt.dll
+				- runtimes/linux-x64/native/libnvtt.dll
+		- All native binaries are named "FreeImage","libFreeImage", "nvtt", "libnvtt" depending on platform, since we're putting them in "well known" architecture folders, no need to have unique names
+	- Added a Unity script that will make it easier for users to load the native DLLs when running in Editor/Standalone Unity 3D
+
+Targets:
+
+FreeImage 3.18.0
+Nvidia Texture Tools 2.1.1 (https://github.com/Starnick/nvidia-texture-tools)
+
+
+
+
+======================================================================
+
+
+
+
+
 1.3 (4/1/2018)
 
 	- Added DDS File read/write support (DDSFile / DDSContainer).

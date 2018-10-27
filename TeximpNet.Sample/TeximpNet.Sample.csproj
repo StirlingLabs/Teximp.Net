@@ -7,6 +7,7 @@
         <StartupObject>TeximpNet.Sample.App</StartupObject>
         <AssemblyName>TeximpNet.Sample</AssemblyName>
         <RootNamespace>TeximpNet.Sample</RootNamespace>
+        <ForceCopyNativeTeximp>true</ForceCopyNativeTeximp>
     </PropertyGroup>
     <ItemGroup>
         <Compile Update="**\*.xaml.cs">
@@ -31,5 +32,5 @@
     <ProjectReference Include="..\TeximpNet\TeximpNet.csproj" />
   </ItemGroup>
 
-  <Import Project="$(ProjectDir)..\TeximpNet\bin\$(Configuration)\build\TeximpNet.targets" />
+  <Import Project="$(ProjectDir)..\TeximpNet\bin\$(Configuration)\nuget\build\TeximpNet.targets" />
 </Project>

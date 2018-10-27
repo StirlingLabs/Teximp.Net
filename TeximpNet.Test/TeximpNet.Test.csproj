@@ -5,6 +5,7 @@
     <LangVersion>latest</LangVersion>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ForceCopyNativeTeximp>true</ForceCopyNativeTeximp>
   </PropertyGroup>
 
   <ItemGroup>
@@ -867,6 +868,6 @@
     <Folder Include="TestFiles\Cubemap\" />
   </ItemGroup>
 
-  <Import Project="$(ProjectDir)..\TeximpNet\bin\$(Configuration)\build\TeximpNet.targets" />
+  <Import Project="$(ProjectDir)..\TeximpNet\bin\$(Configuration)\nuget\build\TeximpNet.targets" />
   
 </Project>
