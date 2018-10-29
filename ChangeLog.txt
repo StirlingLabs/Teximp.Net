@@ -5,8 +5,8 @@ CHANGELOG
 1.4 (10/27/2018)
 
 	- Updated FreeImage to 3.18.0
-	- Updated nvtt to a *CUSTOM* version of 2.1.1 (https://github.com/Starnick/nvidia-texture-tools), which modifies the C-API slightly to expose 2D texture array support in the compressor
-		- A PR has been submitted to the official repository, the C-API hasn't been updated in some time as new features have been added to the C++ API
+	- Updated nvtt to a refreshed version of 2.1.1, which modifies the C-API slightly to expose 2D texture array support in the compressor
+		- A PR was submitted and accepted to the official repository for this change, the C-API hasn't been updated in some time as new features have been added to the C++ API
 	- NvTextureToolsLibrary has been updated to work with C-API changes, as well as some missing enums have been added
 	- Added x64 linux native binary, x64 macOS native binary
 		- Tested on Ubuntu 18.04 and MacOS 10.13 (High Sierra)
@@ -33,12 +33,13 @@ CHANGELOG
 				- runtimes/osx-x64/native/libnvtt.dll
 				- runtimes/linux-x64/native/libnvtt.dll
 		- All native binaries are named "FreeImage","libFreeImage", "nvtt", "libnvtt" depending on platform, since we're putting them in "well known" architecture folders, no need to have unique names
-	- Added a Unity script that will make it easier for users to load the native DLLs when running in Editor/Standalone Unity 3D
+  - [Source Only] Added a Unity script that will make it easier for users to load the native DLLs when running in Editor/Standalone Unity 3D
+    - Build outputs a folder called "UnityPlugin" which you can drag and drop into the Unity Editor. A package will be available in the Asset Store as well.
 
 Targets:
 
 FreeImage 3.18.0
-Nvidia Texture Tools 2.1.1 (https://github.com/Starnick/nvidia-texture-tools)
+Nvidia Texture Tools 2.1.1 (commit 8a076c8e8db01c5a06430a12ae19cea65eed05f0)
 
 
 
