@@ -2,7 +2,7 @@
 CHANGELOG
 ----------------------------------------------------------------------
 
-1.4 (10/27/2018)
+1.4 (10/28/2018)
 
 	- Updated FreeImage to 3.18.0
 	- Updated nvtt to a refreshed version of 2.1.1, which modifies the C-API slightly to expose 2D texture array support in the compressor

@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Nicholas Woodfield</Authors>
     <Company />
-    <Version>1.4.0-rc1</Version>
+    <Version>1.4.0</Version>
     <PackageLicenseUrl>http://opensource.org/licenses/mit-license.php</PackageLicenseUrl>
     <Copyright>Copyright © 2016-2018 Nicholas Woodfield</Copyright>
     <PackageIconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</PackageIconUrl>
@@ -48,6 +48,9 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
   </ItemGroup>
+
+  <!-- Copies Unity plugin files into a folder with Release build DLLs which can be drag n dropped into a unity project -->
+  <Import Project="..\UnityPlugin\UnityPlugin.targets" />
 
   <!-- Copy targets and native files to a build folder so unit tests can access it (overall will setup a mock nuget folder structure)  -->
   <Target Name="CopyBuildFiles" AfterTargets="AfterBuild">

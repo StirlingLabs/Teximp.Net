@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <!-- Include metadata files for some files since we want to preserve DLL settings and such -->
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\TeximpNet.dll.meta" Link="UnityPlugin\Plugins\TeximpNet\TeximpNet.dll.meta" />
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\TeximpUnity.cs.meta" Link="UnityPlugin\Plugins\TeximpNet\TeximpUnity.cs.meta" />
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\TeximpUnity.cs" Link="UnityPlugin\Plugins\TeximpNet\TeximpUnity.cs" />
+    <UnityContent Include="..\License.txt" Link="UnityPlugin\Plugins\TeximpNet\License_TeximpNet.txt" />
+
+    <!-- Linux -->
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\linux\x86_64\libFreeImage.so.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\linux\x86_64\libfreeImage.so.meta" />
+    <UnityContent Include="..\libs\FreeImage\linux-x64\libFreeImage.so" Link="UnityPlugin\Plugins\TeximpNet\Native\linux\x86_64\libFreeImage.so" />
+    
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\linux\x86_64\libnvtt.so.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\linux\x86_64\libnvtt.so.meta" />
+    <UnityContent Include="..\libs\NvidiaTextureTools\linux-x64\libnvtt.so" Link="UnityPlugin\Plugins\TeximpNet\Native\linux\x86_64\libnvtt.so" />
+    
+    <!-- OSX -->
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\osx\x86_64\libFreeImage.bundle.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\osx\x86_64\libFreeImage.bundle.meta" />
+    <UnityContent Include="..\libs\FreeImage\osx-x64\libFreeImage.dylib" Link="UnityPlugin\Plugins\TeximpNet\Native\osx\x86_64\libFreeImage.bundle" />
+    
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\osx\x86_64\libnvtt.bundle.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\osx\x86_64\libnvtt.bundle.meta" />
+    <UnityContent Include="..\libs\NvidiaTextureTools\osx-x64\libnvtt.dylib" Link="UnityPlugin\Plugins\TeximpNet\Native\osx\x86_64\libnvtt.bundle" />
+    
+    <!-- Windows -->
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\win\x86_64\FreeImage.dll.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86_64\FreeImage.dll.meta" />
+    <UnityContent Include="..\libs\FreeImage\win-x64\FreeImage.dll" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86_64\FreeImage.dll" />
+    
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\win\x86_64\nvtt.dll.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86_64\nvtt.dll.meta" />
+    <UnityContent Include="..\libs\NvidiaTextureTools\win-x64\nvtt.dll" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86_64\nvtt.dll" />
+    
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\win\x86\FreeImage.dll.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86\FreeImage.dll.meta" />
+    <UnityContent Include="..\libs\FreeImage\win-x86\FreeImage.dll" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86\FreeImage.dll" />
+    
+    <UnityContent Include="$(MSBuildThisFileDirectory)Plugins\TeximpNet\Native\win\x86\nvtt.dll.meta" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86\nvtt.dll.meta" />
+    <UnityContent Include="..\libs\NvidiaTextureTools\win-x86\nvtt.dll" Link="UnityPlugin\Plugins\TeximpNet\Native\win\x86\nvtt.dll" />
+       
+  </ItemGroup>
+  
+  <!-- Copy build output -->
+  <Target Name="CopyBuildOutputForUnity" AfterTargets="AfterBuild" Condition="'$(TargetFramework)' == 'netstandard1.3'">
+    <Copy SourceFiles="$(TargetDir)$(AssemblyName).dll" DestinationFolder="$(OutputPath)..\UnityPlugin\Plugins\TeximpNet\" />
+    <Copy Condition="Exists('$(TargetDir)$(AssemblyName).xml')" SourceFiles="$(TargetDir)$(AssemblyName).xml" DestinationFolder="$(OutputPath)..\UnityPlugin\Plugins\TeximpNet\" />
+    <Copy SourceFiles="%(UnityContent.Identity)" DestinationFiles="bin\$(Configuration)\%(UnityContent.Link)" SkipUnchangedFiles="true" Condition="'%(UnityContent.Link)' != ''" />
+  </Target>
+    
+</Project>
