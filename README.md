@@ -3,9 +3,9 @@
 **The latest release can be downloaded via  [NuGet](https://www.nuget.org/packages/TeximpNet/).**
 
 ## Introduction ##
-This is the official repository for **TeximpNet**, a cross-platform .NET wrapper for the [FreeImage](http://freeimage.sourceforge.net/) and [Nvidia Texture Tools](https://github.com/castano/nvidia-texture-tools) libraries. This wrapper combines functionality from both unmanaged libraries to provide a single, easy to use API surface to import, manipulate and export images. The general motivation is to process textures for graphics applications, so there is an emphasis on using the Nvidia Texture Tools library for compression and mipmap chain generation. 
+This is the official repository for **TeximpNet**, a cross-platform .NET wrapper for the [FreeImage](http://freeimage.sourceforge.net/) and [Nvidia Texture Tools](https://github.com/castano/nvidia-texture-tools) libraries. This wrapper combines functionality from both native libraries to provide a single, easy to use API to import, manipulate and export images. The primary motivation is for this library to power (offline) content pipelines to import and process textures for graphics applications, such as compressing them to GPU formats and generating mipmap chains. Although the library can be used at runtime to enable your users to import/export image files just as easily.
 
-P/Invoke is used to communicate with the C-API's of both native libraries. The managed assembly is compiled as AnyCpu and the native DLLs are loaded dynamically for either 32 or 64 bit applications.
+P/Invoke is used to communicate with the C-API of the native libraries. The managed assembly is compiled as **AnyCpu** and the native binaries are loaded dynamically for either 32 or 64 bit applications.
 
 The library is split between two parts, a low level and a high level. The intent is to give as much freedom as possible to the developer to work with the native libraries from managed code.
 
@@ -17,22 +17,40 @@ The library is split between two parts, a low level and a high level. The intent
 ### High level ###
 
 * The two key classes are the Surface and Compressor classes. 
-    * Surface directly corresponds to a FreeImage bitmap. The image data is managed by FreeImage and this class wraps many common FreeImage routines.
-    * Compressor directly corresponds to the Nvidia Texture compressor. This optionally can use a surface or any other data inputs.
+    * **Surface** directly corresponds to a FreeImage bitmap. The image data is managed by FreeImage and this class wraps many common FreeImage routines.
+    * **Compressor** directly corresponds to the Nvidia Texture compressor. This optionally can use a surface or any other data inputs.
+* A **DDS importer/exporter** that does not rely on either library (completely written in C#)
 * To be as performant as possible, all image data is stored or used as IntPtrs. There is a MemoryHelper class that can be used to allocate, read, and write data to memory. The wrapper does not do marshaling of image data for you, similar to how System.Drawing.Bitmap works.
+
+## Supported Frameworks ##
+
+The library runs on both **.NET Core** and **.NET Framework**, targeting specifically:
+
+* **.NET Standard 1.3**
+* **.NET Framework 4.0**
+* **.NET Framework 3.5**
+
+This means the NuGet package is compatible with a **wide range** of applications. When targeting .NET Framework, the package uses a MSBuild targets file to copy native binaries to your application output folder. For .NET Core applications, the native binaries are resolved by the *deps.json* dependency graph automatically.
+
+The library can be compiled on any platform that supports  the DotNet CLI build tools or Visual Studio 2017. There is one **build-time only** dependency, an IL Patcher also distributed as a cross-platform NuGet package. The patcher requires .NET Core 2.0+ or .NET Framework 4.7+ to be installed on your machine to build.
 
 ## Supported Platforms ##
 
-TeximpNet officially targets the **.NET Standard 1.3** and supplies binaries for the following platforms:
+The NuGet package supports the following Operating Systems and Architectures out of the box (located in the *runtimes* folder, under [RID](https://docs.microsoft.com/en-us/dotnet/core/rid-catalog)-specific folders):
 
-* **Windows x86/x64**
-* **Linux x64** (Ubuntu 18.04)
-* **MacOS x64** (MacOS 10.13)
+* **Windows** 
+	* x86, x64 (Tested on Windows 10)
+* **Linux**
+	* x64 (Tested on Ubuntu 18.04 Bionic Beaver)
+* **MacOS**
+	* x64 (Tested on MacOS 10.13 High Sierra)
 
-If your preferred platform is not listed, you will have to build and supply the native binaries yourself. Please consult the *VersionList.txt* file in the **libs** folder for details on what version the library expects. If the library does not work on your platform, please let us know so we can try and get **TeximpNet** running on it!
+You may have to build and provide your own native binaries for a target platform that is not listed. If the library does not support a platform you are targeting, please let us know or contribute an implementation! The logic to dynamically load the native library is abstracted, so new platform implementations can easily be added.
 
-For legacy applications, the NuGet package also has targets **.NET Framework 4.x** and **.NET Framework 3.5** should you need them. The project is compiled with Visual Studio 2017 on windows, and the DotNet CLI for non-Windows platforms. There is one **build-time only** dependency, an IL Patcher also distributed as a cross-platform NuGet package. As long as you're
-able to build with Visual Studio or the DotNet CLI, the library *should* compile without issue on any platform.
+## Unity Users ##
+
+With the release of version 1.4.0, a Unity plugin replicating the NuGet package is outputted to the build folder. You can simply drag and drop the contents into your Unity project, or search the asset store for "**TeximpNet Unity Plugin**". The plugin utilizes a
+runtime initiliazation script to ensure the native binaries are loaded when running in editor or standalone.
 
 ## Licensing ##
 
