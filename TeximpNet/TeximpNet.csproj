@@ -32,15 +32,15 @@
     <Content Include="..\ChangeLog.txt" Link="nuget\ChangeLog.txt" PackagePath="" />
     <Content Include="..\License.txt" Link="nuget\License.txt" PackagePath="" />
     <Content Include="..\Docs\TeximpNet Documentation %28October 2018%29.chm" Link="nuget\TeximpNet Documentation %28October 2018%29.chm" PackagePath="" />
-    <Content Include="..\libs\FreeImage\win-x64\FreeImage.dll" Link="nuget\runtimes\win-x64\native\FreeImage.dll" PackagePath="runtimes\win-x64\native\" />
-    <Content Include="..\libs\FreeImage\win-x86\FreeImage.dll" Link="nuget\runtimes\win-x86\native\FreeImage.dll" PackagePath="runtimes\win-x86\native\" />
-    <Content Include="..\libs\FreeImage\linux-x64\libFreeImage.so" Link="nuget\runtimes\linux-x64\native\libFreeImage.so" PackagePath="runtimes\linux-x64\native\" />
-    <Content Include="..\libs\FreeImage\osx-x64\libFreeImage.dylib" Link="nuget\runtimes\osx-x64\native\libFreeImage.dylib" PackagePath="runtimes\osx-x64\native\" />
-    <Content Include="..\libs\NvidiaTextureTools\win-x64\nvtt.dll" Link="nuget\runtimes\win-x64\native\nvtt.dll" PackagePath="runtimes\win-x64\native\" />
-    <Content Include="..\libs\NvidiaTextureTools\win-x86\nvtt.dll" Link="nuget\runtimes\win-x86\native\nvtt.dll" PackagePath="runtimes\win-x86\native\" />
-    <Content Include="..\libs\NvidiaTextureTools\linux-x64\libnvtt.so" Link="nuget\runtimes\linux-x64\native\libnvtt.so" PackagePath="runtimes\linux-x64\native\" />
-    <Content Include="..\libs\NvidiaTextureTools\osx-x64\libnvtt.dylib" Link="nuget\runtimes\osx-x64\native\libnvtt.dylib" PackagePath="runtimes\osx-x64\native\" />
-    <Content Include="TeximpNet.targets"  Link="nuget\build\TeximpNet.targets" PackagePath="build\" />
+    <Content Include="..\libs\FreeImage\win-x64\FreeImage.dll" Link="nuget\runtimes\win-x64\native\FreeImage.dll" PackagePath="runtimes\win-x64\native" />
+    <Content Include="..\libs\FreeImage\win-x86\FreeImage.dll" Link="nuget\runtimes\win-x86\native\FreeImage.dll" PackagePath="runtimes\win-x86\native" />
+    <Content Include="..\libs\FreeImage\linux-x64\libFreeImage.so" Link="nuget\runtimes\linux-x64\native\libFreeImage.so" PackagePath="runtimes\linux-x64\native" />
+    <Content Include="..\libs\FreeImage\osx-x64\libFreeImage.dylib" Link="nuget\runtimes\osx-x64\native\libFreeImage.dylib" PackagePath="runtimes\osx-x64\native" />
+    <Content Include="..\libs\NvidiaTextureTools\win-x64\nvtt.dll" Link="nuget\runtimes\win-x64\native\nvtt.dll" PackagePath="runtimes\win-x64\native" />
+    <Content Include="..\libs\NvidiaTextureTools\win-x86\nvtt.dll" Link="nuget\runtimes\win-x86\native\nvtt.dll" PackagePath="runtimes\win-x86\native" />
+    <Content Include="..\libs\NvidiaTextureTools\linux-x64\libnvtt.so" Link="nuget\runtimes\linux-x64\native\libnvtt.so" PackagePath="runtimes\linux-x64\native" />
+    <Content Include="..\libs\NvidiaTextureTools\osx-x64\libnvtt.dylib" Link="nuget\runtimes\osx-x64\native\libnvtt.dylib" PackagePath="runtimes\osx-x64\native" />
+    <Content Include="TeximpNet.targets"  Link="nuget\build\TeximpNet.targets" PackagePath="build" />
   </ItemGroup>
 
   <ItemGroup>
