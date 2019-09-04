@@ -10,7 +10,7 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Nicholas Woodfield</Authors>
     <Company />
-    <Version>1.4.0</Version>
+    <Version>1.4.1</Version>
     <PackageLicenseUrl>http://opensource.org/licenses/mit-license.php</PackageLicenseUrl>
     <Copyright>Copyright © 2016-2018 Nicholas Woodfield</Copyright>
     <PackageIconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</PackageIconUrl>

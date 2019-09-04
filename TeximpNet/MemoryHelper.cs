@@ -65,7 +65,7 @@ namespace TeximpNet
             lock(s_pinnedObjects)
             {
                 GCHandle handle;
-                if(!s_pinnedObjects.TryGetValue(obj, out handle))
+                if(s_pinnedObjects.TryGetValue(obj, out handle))
                 {
                     handle.Free();
                     s_pinnedObjects.Remove(obj);
