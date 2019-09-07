@@ -55,6 +55,13 @@ namespace TeximpNet.Unmanaged
     public delegate void EndImageHandler();
 
     /// <summary>
+    /// When the <see cref="Compressor"/> is processing, this will be called if any errors are encountered.
+    /// </summary>
+    /// <param name="errorCode">Type of error</param>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void ErrorHandler(CompressorError errorCode);
+
+    /// <summary>
     /// Manages the lifetime and access to the Nvidia Texture Tools (NVTT) native library.
     /// </summary>
     public sealed class NvTextureToolsLibrary : UnmanagedLibrary
@@ -67,6 +74,7 @@ namespace TeximpNet.Unmanaged
         private const String DefaultLibName = "nvtt";
 
         private static NvTextureToolsLibrary s_instance;
+        private String[] m_errorStrings;
 
         /// <summary>
         /// Gets the instance of the NVTT library. This is thread-safe.
@@ -190,7 +198,7 @@ namespace TeximpNet.Unmanaged
         /// </summary>
         /// <param name="inputOptions">Pointer to input options object.</param>
         /// <param name="pixelFormat">Pixel format enumeration.</param>
-        public void SetInputOptionsFormat(IntPtr inputOptions, int pixelFormat)
+        public void SetInputOptionsFormat(IntPtr inputOptions, InputFormat pixelFormat)
         {
             if(inputOptions == IntPtr.Zero)
                 return;
@@ -199,7 +207,7 @@ namespace TeximpNet.Unmanaged
 
             Functions.nvttSetInputOptionsFormat func = GetFunction<Functions.nvttSetInputOptionsFormat>(FunctionNames.nvttSetInputOptionsFormat);
 
-            func(inputOptions, (NvttInputFormat) pixelFormat);
+            func(inputOptions, pixelFormat);
         }
 
         /// <summary>
@@ -621,7 +629,7 @@ namespace TeximpNet.Unmanaged
         /// If writing to a stream or file, specify if the DDS header should be written as well.
         /// </summary>
         /// <param name="outputOptions">Pointer to output options object.</param>
-        /// <param name="value">True to write out the DDS header, false if otherwise.</param>
+        /// <param name="value">True to write out the DDS header, false if otherwise. (default is true)</param>
         public void SetOutputOptionsOutputHeader(IntPtr outputOptions, bool value)
         {
             if(outputOptions == IntPtr.Zero)
@@ -635,7 +643,59 @@ namespace TeximpNet.Unmanaged
         }
 
         /// <summary>
-        /// Specifies IO handlers when writing to a stream.
+        /// Sets the output file format if the compressor is writing to a file.
+        /// </summary>
+        /// <param name="outputOptions">Pointer to output options object.</param>
+        /// <param name="format">File format of the output container. (default is <see cref="OutputFileFormat.DDS"/>.</param>
+        public void SetOutputOptionsContainer(IntPtr outputOptions, OutputFileFormat format)
+        {
+            if (outputOptions == IntPtr.Zero)
+                return;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttSetOutputOptionsContainer func = GetFunction<Functions.nvttSetOutputOptionsContainer>(FunctionNames.nvttSetOutputOptionsContainer);
+
+            func(outputOptions, format);
+        }
+
+        /// <summary>
+        /// If true and if the format allows it, colors will be in the sRGB color space.
+        /// </summary>
+        /// <param name="outputOptions">Pointer to output options object.</param>
+        /// <param name="value">True if sRGB colors should be outputted, false if linear. (default is false)</param>
+        public void SetOutputOptionsSrgbFlag(IntPtr outputOptions, bool value)
+        {
+            if(outputOptions == IntPtr.Zero)
+                return;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttSetOutputOptionsSrgbFlag func = GetFunction<Functions.nvttSetOutputOptionsSrgbFlag>(FunctionNames.nvttSetOutputOptionsSrgbFlag);
+
+            func(outputOptions, (value) ? NvttBool.True : NvttBool.False);
+        }
+
+        /// <summary>
+        /// Sets error handler for the compressor to output error codes during processing.
+        /// </summary>
+        /// <param name="outputOptions">Pointer to output options object.</param>
+        /// <param name="errorHandlerCallback">Callback for error reporting or <see cref="IntPtr.Zero"/> to unset.</param>
+        public void SetOutputOptionsErrorHandler(IntPtr outputOptions, IntPtr errorHandlerCallback)
+        {
+            //N.B. okay if callback is null, that's how we unset it
+            if (outputOptions == IntPtr.Zero)
+                return;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttSetOutputOptionsErrorHandler func = GetFunction<Functions.nvttSetOutputOptionsErrorHandler>(FunctionNames.nvttSetOutputOptionsErrorHandler);
+
+            func(outputOptions, errorHandlerCallback);
+        }
+
+        /// <summary>
+        /// Specifies IO handlers when writing to a stream. To unset callbacks, pass in <see cref="IntPtr.Zero"/> for all callbacks.
         /// </summary>
         /// <param name="outputOptions">Pointer to output options object.</param>
         /// <param name="beginImageHandlerCallback">Callback when a new image is about to begin, specifying image details.</param>
@@ -643,7 +703,8 @@ namespace TeximpNet.Unmanaged
         /// <param name="endImageHandlerCallback">Called when an image has completed.</param>
         public void SetOutputOptionsOutputHandler(IntPtr outputOptions, IntPtr beginImageHandlerCallback, IntPtr outputHandlerCallback, IntPtr endImageHandlerCallback)
         {
-            if(outputOptions == IntPtr.Zero || beginImageHandlerCallback == IntPtr.Zero || outputHandlerCallback == IntPtr.Zero || endImageHandlerCallback == IntPtr.Zero)
+            //N.B. okay if callbacks are null, that's how we unset them
+            if(outputOptions == IntPtr.Zero)
                 return;
 
             LoadIfNotLoaded();
@@ -685,6 +746,41 @@ namespace TeximpNet.Unmanaged
             Functions.nvttDestroyCompressor func = GetFunction<Functions.nvttDestroyCompressor>(FunctionNames.nvttDestroyCompressor);
 
             func(compressor);
+        }
+
+        /// <summary>
+        /// Attempts to enable/disable CUDA acceleration on the compressor. If the CUDA runtime cannot be resolved, this will
+        /// not do anything.
+        /// </summary>
+        /// <param name="compressor">Pointer to compressor object.</param>
+        /// <param name="value">True to enable CUDA acceleration, false to disable it.</param>
+        public void EnableCudaAcceleration(IntPtr compressor, bool value)
+        {
+            if (compressor == IntPtr.Zero)
+                return;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttEnableCudaAcceleration func = GetFunction<Functions.nvttEnableCudaAcceleration>(FunctionNames.nvttEnableCudaAcceleration);
+
+            func(compressor, (value) ? NvttBool.True : NvttBool.False);
+        }
+
+        /// <summary>
+        /// Queries the compressor if CUDA acceleration is enabled. Not all compressed formats support acceleration.
+        /// </summary>
+        /// <param name="compressor">Pointer to compressor object.</param>
+        /// <returns>True if CUDA acceleration is enabled.</returns>
+        public bool IsCudaAccelerationEnabled(IntPtr compressor)
+        {
+            if (compressor == IntPtr.Zero)
+                return false;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttIsCudaAccelerationEnabled func = GetFunction<Functions.nvttIsCudaAccelerationEnabled>(FunctionNames.nvttIsCudaAccelerationEnabled);
+
+            return (func(compressor) == NvttBool.True) ? true : false;
         }
 
         /// <summary>
@@ -743,9 +839,39 @@ namespace TeximpNet.Unmanaged
             return func();
         }
 
+        /// <summary>
+        /// Gets the error string associated with the error code.
+        /// </summary>
+        /// <param name="error">Error code</param>
+        /// <returns>Text representing the error.</returns>
+        public String GetErrorString(CompressorError error)
+        {
+            LoadIfNotLoaded();
+
+            if (m_errorStrings == null)
+                PreloadErrorStrings();
+
+            return m_errorStrings[(int)error];
+        }
+
         private static bool TranslateBool(NvttBool value)
         {
             return (value == NvttBool.False) ? false : true;
+        }
+
+        private unsafe void PreloadErrorStrings()
+        {
+            CompressorError[] errorCodes = Enum.GetValues(typeof(CompressorError)) as CompressorError[];
+            m_errorStrings = new string[errorCodes.Length];
+
+            Functions.nvttErrorString func = GetFunction<Functions.nvttErrorString>(FunctionNames.nvttErrorString);
+
+            for (int i = 0; i < errorCodes.Length; i++)
+            {
+                IntPtr charPtr = func((CompressorError)i);
+                String str = Marshal.PtrToStringAnsi(charPtr);
+                m_errorStrings[i] = String.IsNullOrEmpty(str) ? "Could not get error text" : str;
+            }
         }
 
         #endregion
@@ -796,6 +922,9 @@ namespace TeximpNet.Unmanaged
             public const String nvttDestroyOutputOptions = "nvttDestroyOutputOptions";
             public const String nvttSetOutputOptionsFileName = "nvttSetOutputOptionsFileName";
             public const String nvttSetOutputOptionsOutputHeader = "nvttSetOutputOptionsOutputHeader";
+            public const String nvttSetOutputOptionsContainer = "nvttSetOutputOptionsContainer";
+            public const String nvttSetOutputOptionsSrgbFlag = "nvttSetOutputOptionsSrgbFlag";
+            public const String nvttSetOutputOptionsErrorHandler = "nvttSetOutputOptionsErrorHandler";
             public const String nvttSetOutputOptionsOutputHandler = "nvttSetOutputOptionsOutputHandler";
 
             #endregion
@@ -804,6 +933,8 @@ namespace TeximpNet.Unmanaged
 
             public const String nvttCreateCompressor = "nvttCreateCompressor";
             public const String nvttDestroyCompressor = "nvttDestroyCompressor";
+            public const String nvttEnableCudaAcceleration = "nvttEnableCudaAcceleration";
+            public const String nvttIsCudaAccelerationEnabled = "nvttIsCudaAccelerationEnabled";
             public const String nvttCompress = "nvttCompress";
             public const String nvttEstimateSize = "nvttEstimateSize";
 
@@ -826,25 +957,6 @@ namespace TeximpNet.Unmanaged
         {
             False = 0,
             True = 1
-        }
-
-        //Only format support apparently, kind of no point but keep it around...
-        internal enum NvttInputFormat
-        {
-            BGRA_8UB = 0
-        }
-
-        //C-API has the error handler commented out...
-        internal enum NvttError
-        {
-            InvalidInput = 0,
-            UserInterruption = 1,
-            UnsupportedFeature = 2,
-            CudaError = 3,
-            Unknown = 4,
-            FileOpen = 5,
-            FileWrite = 6,
-            UnsupportedOutputFormat = 7
         }
 
         #endregion
@@ -871,7 +983,7 @@ namespace TeximpNet.Unmanaged
             public delegate NvttBool nvttSetInputOptionsMipmapData(IntPtr inputOptions, IntPtr data, int width, int height, int depth, int face, int mipmap);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetInputOptionsFormat)]
-            public delegate void nvttSetInputOptionsFormat(IntPtr inputOptions, NvttInputFormat format);
+            public delegate void nvttSetInputOptionsFormat(IntPtr inputOptions, InputFormat format);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetInputOptionsAlphaMode)]
             public delegate void nvttSetInputOptionsAlphaMode(IntPtr inputOptions, AlphaMode alphaMode);
@@ -953,6 +1065,15 @@ namespace TeximpNet.Unmanaged
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetOutputOptionsOutputHeader)]
             public delegate void nvttSetOutputOptionsOutputHeader(IntPtr outputOptions, NvttBool value);
 
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetOutputOptionsContainer)]
+            public delegate void nvttSetOutputOptionsContainer(IntPtr outputOptions, OutputFileFormat value);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetOutputOptionsSrgbFlag)]
+            public delegate void nvttSetOutputOptionsSrgbFlag(IntPtr outputOptions, NvttBool value);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetOutputOptionsErrorHandler)]
+            public delegate void nvttSetOutputOptionsErrorHandler(IntPtr outputOptions, IntPtr errorHandler);
+
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetOutputOptionsOutputHandler)]
             public delegate void nvttSetOutputOptionsOutputHandler(IntPtr outputOptions, IntPtr beginImageHandlerCallback, IntPtr outputHandlerCallback, IntPtr endImageHandlerCallback);
 
@@ -965,6 +1086,12 @@ namespace TeximpNet.Unmanaged
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttDestroyCompressor)]
             public delegate void nvttDestroyCompressor(IntPtr compressor);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttEnableCudaAcceleration)]
+            public delegate void nvttEnableCudaAcceleration(IntPtr compressor, NvttBool b);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttIsCudaAccelerationEnabled)]
+            public delegate NvttBool nvttIsCudaAccelerationEnabled(IntPtr compressor);
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttCompress)]
             public delegate NvttBool nvttCompress(IntPtr compressor, IntPtr inputOptions, IntPtr compressionOptions, IntPtr outputOptions);
@@ -980,8 +1107,7 @@ namespace TeximpNet.Unmanaged
             public delegate uint nvttVersion();
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttErrorString)]
-            [return: MarshalAs(UnmanagedType.LPStr)]
-            public delegate String nvttErrorString(NvttError err);
+            public delegate IntPtr nvttErrorString(CompressorError err);
 
             #endregion
         }

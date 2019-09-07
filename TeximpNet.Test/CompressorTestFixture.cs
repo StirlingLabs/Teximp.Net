@@ -33,6 +33,20 @@ namespace TeximpNet.Test
     public class CompressorTestFixture : TeximpTestFixture
     {
         [Fact]
+        public void TestErrorCodes()
+        {
+            Compressor compressor = new Compressor();
+            compressor.Compression.Format = CompressionFormat.DXT1;
+  
+            bool success = compressor.Process("Test.dds");
+            Assert.False(success);
+
+            Assert.True(compressor.HasLastError);
+            Assert.True(compressor.LastError != CompressorError.Unknown);
+            Assert.NotNull(compressor.LastErrorString);
+        }
+
+        [Fact]
         public void TestSetSurfaceData()
         {
             String fileName = GetInputFile("726x337.png");
@@ -91,6 +105,19 @@ namespace TeximpNet.Test
             String outputFile = GetOutputFile("bunny.dds");
 
             Assert.True(compressor.Process(outputFile));
+
+            // Test output to KTX
+
+            compressor.Output.OutputFileFormat = OutputFileFormat.KTX;
+            String ktxOutputFile = GetOutputFile("bunny.ktx");
+            Assert.True(compressor.Process(ktxOutputFile));
+
+            // Test output to DDS10
+
+            compressor.Output.OutputFileFormat = OutputFileFormat.DDS10;
+            compressor.Output.IsSRGBColorSpace = true;
+            String dds10OutputFile = GetOutputFile("bunny_dds10.dds");
+            Assert.True(compressor.Process(dds10OutputFile));
         }
 
         [Fact]

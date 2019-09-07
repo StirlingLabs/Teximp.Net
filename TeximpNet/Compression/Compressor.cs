@@ -45,6 +45,7 @@ namespace TeximpNet.Compression
         private CompressionOptions m_compressionOptions;
         private OutputOptions m_outputOptions;
         private bool m_isDisposed;
+        private CompressorError? m_lastError;
 
         //For writing to memory, but writing to a DDS container
         private DDSContainer m_currentDDSContainer;
@@ -113,6 +114,39 @@ namespace TeximpNet.Compression
         }
 
         /// <summary>
+        /// Queries if there is an error code if the compressor failed to process.
+        /// </summary>
+        public bool HasLastError
+        {
+            get
+            {
+                return m_lastError.HasValue;
+            }
+        }
+
+        /// <summary>
+        /// Queries the last error code encountered.
+        /// </summary>
+        public CompressorError LastError
+        {
+            get
+            {
+                return (m_lastError.HasValue) ? m_lastError.Value : CompressorError.Unknown;
+            }
+        }
+
+        /// <summary>
+        /// Queries the string message of the last error code encountered.
+        /// </summary>
+        public String LastErrorString
+        {
+            get
+            {
+                return NvTextureToolsLibrary.Instance.GetErrorString(LastError);
+            }
+        }
+
+        /// <summary>
         /// Constructs a new instance of the <see cref="Compressor"/> class.
         /// </summary>
         public Compressor()
@@ -124,9 +158,10 @@ namespace TeximpNet.Compression
 
             m_inputOptions = new InputOptions(m_inputOptionsPtr);
             m_compressionOptions = new CompressionOptions(m_compressionOptionsPtr);
-            m_outputOptions = new OutputOptions(m_outputOptionsPtr, BeginImage, OutputData, EndImage);
+            m_outputOptions = new OutputOptions(m_outputOptionsPtr, BeginImage, OutputData, EndImage, HandleError);
 
             m_isDisposed = false;
+            m_lastError = null;
         }
 
         /// <summary>
@@ -144,8 +179,17 @@ namespace TeximpNet.Compression
         /// <returns>True if the image was successfully processed and saved, false if otherwise.</returns>
         public bool Process(String outputFileName)
         {
-            if(String.IsNullOrEmpty(outputFileName) || !m_inputOptions.HasData)
+            if(String.IsNullOrEmpty(outputFileName))
+            {
+                HandleError(CompressorError.FileOpen);
                 return false;
+            }
+
+            if (!m_inputOptions.HasData)
+            {
+                HandleError(CompressorError.InvalidInput);
+                return false;
+            }
 
             m_outputtingToStream = false;
             m_outputOptions.SetOutputToFile(outputFileName);
@@ -161,8 +205,18 @@ namespace TeximpNet.Compression
         public bool Process(Stream stream)
         {
             if (stream == null || !stream.CanWrite)
+            {
+                HandleError(CompressorError.FileWrite);
                 return false;
+            }
 
+            if (!m_inputOptions.HasData)
+            {
+                HandleError(CompressorError.InvalidInput);
+                return false;
+            }
+
+            m_lastError = null;
             m_outputtingToStream = true;
             m_outputOptions.SetOutputToMemory(true);
 
@@ -194,9 +248,13 @@ namespace TeximpNet.Compression
         {
             compressedImages = null;
 
-            if(!m_inputOptions.HasData)
+            if (!m_inputOptions.HasData)
+            {
+                HandleError(CompressorError.InvalidInput);
                 return false;
+            }
 
+            m_lastError = null;
             m_outputtingToStream = false;
             m_outputOptions.SetOutputToMemory(true);
 
@@ -233,6 +291,12 @@ namespace TeximpNet.Compression
 
             compressedImages = ddsContainer;
             return success;
+        }
+
+        //ErrorHandler callback
+        private void HandleError(CompressorError error)
+        {
+            m_lastError = error;
         }
 
         //BeginImageHandler callback
@@ -1540,9 +1604,12 @@ namespace TeximpNet.Compression
             private BeginImageHandler m_beginCallback;
             private OutputHandler m_outputCallback;
             private EndImageHandler m_endCallback;
-            private IntPtr m_beginPtr, m_outputPtr, m_endPtr;
+            private ErrorHandler m_errorCallback;
+            private IntPtr m_beginPtr, m_outputPtr, m_endPtr, m_errorPtr;
             private bool m_outputToMemory;
             private bool m_outputHeader;
+            private OutputFileFormat m_outputFileFormat;
+            private bool m_isSrgbColorSpace;
 
             /// <summary>
             /// Gets the pointer to the native object.
@@ -1572,20 +1639,60 @@ namespace TeximpNet.Compression
                 }
             }
 
-            internal OutputOptions(IntPtr nativePtr, BeginImageHandler beginCallback, OutputHandler outputCallback, EndImageHandler endCallback)
+            /// <summary>
+            /// Gets or sets if the output data should be in the sRGB color space if the format supports it. By default
+            /// this is false.
+            /// </summary>
+            public bool IsSRGBColorSpace
+            {
+                get
+                {
+                    return m_isSrgbColorSpace;
+                }
+                set
+                {
+                    m_isSrgbColorSpace = value;
+                    NvTextureToolsLibrary.Instance.SetOutputOptionsSrgbFlag(m_outputOptionsPtr, value);
+                }
+            }
+
+            /// <summary>
+            /// Gets or sets the file format of the output container if the data is to be written to disk. Default is
+            /// <see cref="OutputFileFormat.DDS"/>.
+            /// </summary>
+            public OutputFileFormat OutputFileFormat
+            {
+                get
+                {
+                    return m_outputFileFormat;
+                }
+                set
+                {
+                    m_outputFileFormat = value;
+                    NvTextureToolsLibrary.Instance.SetOutputOptionsContainer(m_outputOptionsPtr, value);
+                }
+            }
+
+            internal OutputOptions(IntPtr nativePtr, BeginImageHandler beginCallback, OutputHandler outputCallback, EndImageHandler endCallback, ErrorHandler errorCallback)
             {
                 m_outputOptionsPtr = nativePtr;
 
                 m_beginCallback = beginCallback;
                 m_outputCallback = outputCallback;
                 m_endCallback = endCallback;
+                m_errorCallback = errorCallback;
 
                 m_beginPtr = Marshal.GetFunctionPointerForDelegate(beginCallback);
                 m_outputPtr = Marshal.GetFunctionPointerForDelegate(outputCallback);
                 m_endPtr = Marshal.GetFunctionPointerForDelegate(m_endCallback);
+                m_errorPtr = Marshal.GetFunctionPointerForDelegate(m_errorCallback);
 
                 m_outputToMemory = false;
-                m_outputHeader = true; //API says the write handler will output the texture file header by default
+
+                // nvtt says these are the defaults...
+                m_isSrgbColorSpace = false;
+                m_outputFileFormat = OutputFileFormat.DDS;
+                m_outputHeader = true;
             }
 
             internal void SetOutputToFile(String fileName)

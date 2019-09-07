@@ -377,3 +377,92 @@ namespace TeximpNet.Compression
         Negative_Z = 5
     }
 }
+
+/// <summary>
+/// Format of input data for the compressor. (NOTE: High level C# API currently
+/// only operates on 8-bit RGBA/BGRA data, this is only exposed for the unmanaged API).
+/// </summary>
+public enum InputFormat
+{
+    /// <summary>
+    /// BGRA order 4 channels 8-bit integers.
+    /// </summary>
+    BGRA_8UB = 0,
+
+    /// <summary>
+    /// 4-channel 16-bit floats.
+    /// </summary>
+    RGBA_16F = 1,
+
+    /// <summary>
+    /// 4-channel 32-bit floats.
+    /// </summary>
+    RGBA_32F = 2,
+
+    /// <summary>
+    /// Single channel of 32-bit floats.
+    /// </summary>
+    R_32F = 3
+}
+
+/// <summary>
+/// Output file format if a compressor is writing results to the disk.
+/// </summary>
+public enum OutputFileFormat
+{
+    /// <summary>
+    /// DirectDrawSurface format (widely supported).
+    /// </summary>
+    DDS = 0,
+
+    /// <summary>
+    /// DirectDrawSurface DX10 format (DDS file will have extended header, but not all DXGI formats may be widely supported).
+    /// </summary>
+    DDS10 = 1,
+
+    /// <summary>
+    /// Khronos texture format.
+    /// </summary>
+    KTX = 2
+}
+
+/// <summary>
+/// Error codes for errors that can happen when a compressor is executed.
+/// </summary>
+public enum CompressorError
+{
+    /// <summary>
+    /// No error or unknown.
+    /// </summary>
+    Unknown = 0,
+
+    /// <summary>
+    /// Input is invalid.
+    /// </summary>
+    InvalidInput = 1,
+
+    /// <summary>
+    /// The feature is not supported.
+    /// </summary>
+    UnsupportedFeature = 2,
+
+    /// <summary>
+    /// Cuda error.
+    /// </summary>
+    CudaError = 3,
+
+    /// <summary>
+    /// File could not be opened.
+    /// </summary>
+    FileOpen = 4,
+
+    /// <summary>
+    /// File is not writable.
+    /// </summary>
+    FileWrite = 5,
+
+    /// <summary>
+    /// Output format is not supported.
+    /// </summary>
+    UnsupportedOutputFormat = 6
+}
