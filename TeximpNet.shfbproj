@@ -15,11 +15,11 @@
     <RootNamespace>Documentation</RootNamespace>
     <Name>Documentation</Name>
     <!-- SHFB properties -->
-    <OutputPath>C:\Users\Nicholas\Documents\Visual Studio 2017\Projects\TeximpNet\Docs\</OutputPath>
-    <HtmlHelpName>TeximpNet Documentation %28October 2018%29</HtmlHelpName>
+    <OutputPath>C:\Users\nicho\Documents\Visual Studio 2019\Projects\TeximpNet\Docs\</OutputPath>
+    <HtmlHelpName>TeximpNet Documentation %28August 2019%29</HtmlHelpName>
     <Language>en-US</Language>
     <PresentationStyle>VS2013</PresentationStyle>
-    <HelpFileVersion>1.4.0</HelpFileVersion>
+    <HelpFileVersion>1.4.1</HelpFileVersion>
     <ProductTitle>TeximpNet</ProductTitle>
     <VendorName>
     </VendorName>
@@ -27,8 +27,8 @@
       <DocumentationSource sourceFile="TeximpNet\bin\Release\net4\TeximpNet.dll" />
       <DocumentationSource sourceFile="TeximpNet\bin\Release\net4\TeximpNet.xml" />
     </DocumentationSources>
-    <HelpTitle>TeximpNet Documentation %28October 2018%29</HelpTitle>
-    <CopyrightText>Copyright &amp;#169%3b 2012-2018 AssimpNet - Nicholas Woodfield. All rights reserved.</CopyrightText>
+    <HelpTitle>TeximpNet Documentation %28August 2019%29</HelpTitle>
+    <CopyrightText>Copyright &amp;#169%3b 2012-2019 AssimpNet - Nicholas Woodfield. All rights reserved.</CopyrightText>
     <NamespaceSummaries>
       <NamespaceSummaryItem name="(global)" isDocumented="False" />
       <NamespaceSummaryItem name="TeximpNet" isDocumented="True">Main namespace - contains high level TeximpNet objects.</NamespaceSummaryItem>

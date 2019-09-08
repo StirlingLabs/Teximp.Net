@@ -11,7 +11,7 @@
     <Authors>Nicholas Woodfield</Authors>
     <Company />
     <Version>1.4.1</Version>
-    <PackageLicenseUrl>http://opensource.org/licenses/mit-license.php</PackageLicenseUrl>
+    <PackageLicenseFile>License.txt</PackageLicenseFile>
     <Copyright>Copyright © 2016-2019 Nicholas Woodfield</Copyright>
     <PackageIconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</PackageIconUrl>
     <PackageProjectUrl>http://bitbucket.org/Starnick/teximpnet</PackageProjectUrl>
@@ -34,7 +34,7 @@
   <ItemGroup>
     <Content Include="..\ChangeLog.txt" Link="nuget\ChangeLog.txt" PackagePath="" />
     <Content Include="..\License.txt" Link="nuget\License.txt" PackagePath="" />
-    <Content Include="..\Docs\TeximpNet Documentation %28October 2018%29.chm" Link="nuget\TeximpNet Documentation %28October 2018%29.chm" PackagePath="" />
+    <Content Include="..\Docs\TeximpNet Documentation %28August 2019%29.chm" Link="nuget\TeximpNet Documentation %28August 2019%29.chm" PackagePath="" />
     <Content Include="..\libs\FreeImage\win-x64\FreeImage.dll" Link="nuget\runtimes\win-x64\native\FreeImage.dll" PackagePath="runtimes\win-x64\native" />
     <Content Include="..\libs\FreeImage\win-x86\FreeImage.dll" Link="nuget\runtimes\win-x86\native\FreeImage.dll" PackagePath="runtimes\win-x86\native" />
     <Content Include="..\libs\FreeImage\linux-x64\libFreeImage.so" Link="nuget\runtimes\linux-x64\native\libFreeImage.so" PackagePath="runtimes\linux-x64\native" />
