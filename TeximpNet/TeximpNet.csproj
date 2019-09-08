@@ -17,6 +17,9 @@
     <PackageProjectUrl>http://bitbucket.org/Starnick/teximpnet</PackageProjectUrl>
     <RepositoryUrl>https://bitbucket.org/Starnick/teximpnet.git</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
     <Description>A .NET texture IO and processing library that wraps the FreeImage and Nvidia Texture Tools libraries. The library is able to import and export dozens of image formats, create mipmap chains, and compress textures for GPUs. This release targets version 3.18.0 of FreeImage and a (modified) version 2.1.1 of NVTT.</Description>
     <PackageTags>Importers 3D Graphics Content Assets Texture Cubemap Image Compression DDS DXT BMP JPG JPEG TGA PNG GIF RAW TIFF</PackageTags>
     <RootNamespace>TeximpNet</RootNamespace>
@@ -40,12 +43,16 @@
     <Content Include="..\libs\NvidiaTextureTools\win-x86\nvtt.dll" Link="nuget\runtimes\win-x86\native\nvtt.dll" PackagePath="runtimes\win-x86\native" />
     <Content Include="..\libs\NvidiaTextureTools\linux-x64\libnvtt.so" Link="nuget\runtimes\linux-x64\native\libnvtt.so" PackagePath="runtimes\linux-x64\native" />
     <Content Include="..\libs\NvidiaTextureTools\osx-x64\libnvtt.dylib" Link="nuget\runtimes\osx-x64\native\libnvtt.dylib" PackagePath="runtimes\osx-x64\native" />
-    <Content Include="TeximpNet.targets"  Link="nuget\build\TeximpNet.targets" PackagePath="build" />
+    <Content Include="TeximpNet.targets" Link="nuget\build\TeximpNet.targets" PackagePath="build" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="MemoryInterop.ILPatcher" Version="2.0.0">
       <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.SourceLink.Bitbucket.Git" Version="1.0.0-beta2-19367-01">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
   </ItemGroup>
 
