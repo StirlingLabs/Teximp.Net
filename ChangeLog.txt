@@ -2,6 +2,11 @@
 CHANGELOG
 ----------------------------------------------------------------------
 
+1.4.1 (9/8/2019)
+
+	- Updated nvtt to a refreshed version of 2.1.1, which adds some missing C-API functionality, namely the compressor can now output to DDS10 and KTX formats.
+	- Fixed a memory leak
+
 1.4 (10/28/2018)
 
 	- Updated FreeImage to 3.18.0

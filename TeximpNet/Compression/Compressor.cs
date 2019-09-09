@@ -1,5 +1,5 @@
 ﻿/*
-* Copyright (c) 2016-2018 TeximpNet - Nicholas Woodfield
+* Copyright (c) 2016-2019 TeximpNet - Nicholas Woodfield
 * 
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -32,7 +32,7 @@ namespace TeximpNet.Compression
     /// <summary>
     /// A compressor processes input image data (either from a <see cref="Surface"/> or just raw image data) using the Nvidia Texture Tools
     /// API and outputs either to a file (e.g. DDS) or to memory (e.g. <see cref="DDSContainer"/>). Processing can range from mipmap creation (with a variety of filters) to compressing RGBA
-    /// data into a number of GPU compressed formats. Both 2D and Cubemap textures can be processed.
+    /// data into a number of GPU compressed formats.
     /// </summary>
     public sealed class Compressor : IDisposable
     {
