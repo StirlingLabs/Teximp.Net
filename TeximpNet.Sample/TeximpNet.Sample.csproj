@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
         <OutputType>Exe</OutputType>
-        <TargetFrameworks>netcoreapp2.1;net461</TargetFrameworks>
+        <TargetFrameworks>netcoreapp3.1;net48</TargetFrameworks>
         <LangVersion>latest</LangVersion>
         <ApplicationIcon />
         <StartupObject>TeximpNet.Sample.App</StartupObject>
