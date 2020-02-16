@@ -2,6 +2,10 @@
 CHANGELOG
 ----------------------------------------------------------------------
 
+1.4.3 (2/15/2020)
+
+	- Updated to latest ILPatcher, which removes the use of the 'cpobj' instruction. This should make the library compatible with Unity's IL2CPP
+
 1.4.2 (2/7/2020)
 
 	- Refresh nvtt binaries that disables the parallel dispatcher in native code. It would cause the GC thread to hang on finalize preventing apps from closing gracefully.

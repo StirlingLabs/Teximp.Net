@@ -10,10 +10,10 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Nicholas Woodfield</Authors>
     <Company />
-    <Version>1.4.2</Version>
+    <Version>1.4.3</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
     <Copyright>Copyright © 2016-2020 Nicholas Woodfield</Copyright>
-    <PackageIconUrl>https://bytebucket.org/Starnick/teximpnet/raw/0e28b498b172affa0f9798135a48669b3a394f99/logo.png</PackageIconUrl>
+    <PackageIcon>logo.png</PackageIcon>
     <PackageProjectUrl>http://bitbucket.org/Starnick/teximpnet</PackageProjectUrl>
     <RepositoryUrl>https://bitbucket.org/Starnick/teximpnet.git</RepositoryUrl>
     <RepositoryType>Git</RepositoryType>
@@ -34,6 +34,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\logo.png" Link="nuget\logo.png" PackagePath=""/>
     <Content Include="..\ChangeLog.txt" Link="nuget\ChangeLog.txt" PackagePath="" />
     <Content Include="..\License.txt" Link="nuget\License.txt" PackagePath="" />
     <Content Include="..\Docs\TeximpNet Documentation %28September 2019%29.chm" Link="nuget\TeximpNet Documentation %28September 2019%29.chm" PackagePath="" />
