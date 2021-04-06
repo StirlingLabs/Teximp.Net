@@ -2,6 +2,13 @@
 CHANGELOG
 ----------------------------------------------------------------------
 
+1.5.0
+
+	- Updated to an unofficial release of nvtt (2.2.0, since the official repo is in archive mode) 
+		- ICBC used as the main BC1 compressor and various fixes (official 2.1.2 release)
+		- Added several C-API methods to enable multi threading support in the Compressor. It should no longer dead-lock on app shutdown and should see
+		a speed bump. This can be turned off by the property IsMultiThreadingEnabled.
+
 1.4.3 (2/15/2020)
 
 	- Updated to latest ILPatcher, which removes the use of the 'cpobj' instruction. This should make the library compatible with Unity's IL2CPP

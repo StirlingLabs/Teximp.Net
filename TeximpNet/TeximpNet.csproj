@@ -10,9 +10,9 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <Authors>Nicholas Woodfield</Authors>
     <Company />
-    <Version>1.4.3</Version>
+    <Version>1.5.0</Version>
     <PackageLicenseFile>License.txt</PackageLicenseFile>
-    <Copyright>Copyright © 2016-2020 Nicholas Woodfield</Copyright>
+    <Copyright>Copyright © 2016-2021 Nicholas Woodfield</Copyright>
     <PackageIcon>logo.png</PackageIcon>
     <PackageProjectUrl>http://bitbucket.org/Starnick/teximpnet</PackageProjectUrl>
     <RepositoryUrl>https://bitbucket.org/Starnick/teximpnet.git</RepositoryUrl>

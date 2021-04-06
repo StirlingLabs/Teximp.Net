@@ -1,2 +1,2 @@
 FreeImage 3.18.0
-Nvidia Texture Tools 2.1.1 (commit a131e4c6b0b7c9c73ccc3c9e6f1c7e165be86bcc)
+Nvidia Texture Tools 2.2.0 (https://github.com/Starnick/nvidia-texture-tools)

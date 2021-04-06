@@ -22,6 +22,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Threading.Tasks;
 using TeximpNet.Compression;
@@ -83,6 +84,40 @@ namespace TeximpNet.Test
             }
 
             ddsContainer.Dispose();
+        }
+
+        [Fact]
+        public void TestMultiThreading()
+        {
+            String fileName = GetInputFile("bunny.jpg");
+            Surface surfaceFromFile = Surface.LoadFromFile(fileName);
+
+            //FreeImage is lower left origin (like OpenGL), NVTT is upper-left (like D3D)
+            surfaceFromFile.FlipVertically();
+
+            Compressor compressor = new Compressor();
+            compressor.Compression.Format = CompressionFormat.DXT1;
+            compressor.Input.GenerateMipmaps = true;
+            compressor.Input.SetData(surfaceFromFile);
+
+            compressor.IsMultiThreadingEnabled = true;
+            String outputFile = GetOutputFile("bunny-threaded.dds");
+
+            Stopwatch timer = Stopwatch.StartNew();
+            Assert.True(compressor.Process(outputFile));
+            long threadedMs = timer.ElapsedMilliseconds;
+            timer.Restart();
+
+            compressor.IsMultiThreadingEnabled = false;
+            String outputFile2 = GetOutputFile("bunny-nothreaded.dds");
+            Assert.True(compressor.Process(outputFile2));
+            long noThreadedMs = timer.ElapsedMilliseconds;
+
+            // Should have taken less time...but make sure we actually had the extra cores...
+            if(Environment.ProcessorCount > 1)
+                Assert.True(threadedMs <= noThreadedMs);
+
+            compressor.Dispose();
         }
 
         [Fact]
