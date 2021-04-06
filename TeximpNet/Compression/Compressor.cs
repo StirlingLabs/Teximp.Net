@@ -24,6 +24,9 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.IO;
+#if !NET35
+using System.Threading.Tasks;
+#endif
 using TeximpNet.Unmanaged;
 using TeximpNet.DDS;
 
@@ -44,6 +47,7 @@ namespace TeximpNet.Compression
         private InputOptions m_inputOptions;
         private CompressionOptions m_compressionOptions;
         private OutputOptions m_outputOptions;
+        private TaskDispatcher m_taskDispatcher;
         private bool m_isDisposed;
         private CompressorError? m_lastError;
 
@@ -114,6 +118,21 @@ namespace TeximpNet.Compression
         }
 
         /// <summary>
+        /// Gets or sets if multi-threading should be used when processing images. By default, this is enabled.
+        /// </summary>
+        public bool IsMultiThreadingEnabled
+        {
+            get
+            {
+                return m_taskDispatcher.IsEnabled;
+            }
+            set
+            {
+                m_taskDispatcher.IsEnabled = value;
+            }
+        }
+
+        /// <summary>
         /// Queries if there is an error code if the compressor failed to process.
         /// </summary>
         public bool HasLastError
@@ -159,6 +178,7 @@ namespace TeximpNet.Compression
             m_inputOptions = new InputOptions(m_inputOptionsPtr);
             m_compressionOptions = new CompressionOptions(m_compressionOptionsPtr);
             m_outputOptions = new OutputOptions(m_outputOptionsPtr, BeginImage, OutputData, EndImage, HandleError);
+            m_taskDispatcher = new TaskDispatcher(m_compressorPtr);
 
             m_isDisposed = false;
             m_lastError = null;
@@ -1713,6 +1733,114 @@ namespace TeximpNet.Compression
                     NvTextureToolsLibrary.Instance.SetOutputOptionsOutputHandler(m_outputOptionsPtr, m_beginPtr, m_outputPtr, m_endPtr);
                 else
                     NvTextureToolsLibrary.Instance.SetOutputOptionsOutputHandler(m_outputOptionsPtr, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            }
+        }
+
+        /// <summary>
+        /// Allows for NVTT Tasks to be run on the .NET ThreadPool. The native ThreadPool implementation infinitely waits when the app 
+        /// is trying to shutdown.
+        /// </summary>
+        private sealed class TaskDispatcher
+        {
+            private IntPtr m_compressorPtr;
+            private bool m_enabled;
+            private bool m_canBeEnabled;
+
+            private TaskDispatchFunction m_dispatchFunc;
+            private IntPtr m_dispatchFuncPtr;
+
+            public bool IsEnabled
+            {
+                get
+                {
+                    return m_enabled;
+                }
+                set
+                {
+                    if (!m_canBeEnabled)
+                        return;
+
+                    if (m_enabled != value)
+                    {
+                        m_enabled = value;
+                        EnableTaskParallelism(value);
+                    }
+                }
+            }
+
+            public TaskDispatcher(IntPtr compressorPtr)
+            {
+                m_compressorPtr = compressorPtr;
+                m_enabled = true;
+                m_canBeEnabled = false;
+
+#if !NET35
+                m_canBeEnabled = Environment.ProcessorCount > 1;
+#endif
+
+                m_dispatchFunc = TaskDispatcher.DispatchHandler;
+                m_dispatchFuncPtr = Marshal.GetFunctionPointerForDelegate(m_dispatchFunc);
+
+                // Turn off native ThreadPool by default
+                NvTextureToolsLibrary.Instance.EnableConcurrentTaskDispatcher(compressorPtr, false);
+
+                // Enable managed ThreadPool if we can
+                EnableTaskParallelism(true);
+            }
+
+            private void EnableTaskParallelism(bool enabled)
+            {
+                if (!m_canBeEnabled)
+                    return;
+ 
+                if (enabled)
+                {
+                    NvTextureToolsLibrary.Instance.SetTaskDispatcher(m_compressorPtr, m_dispatchFuncPtr);
+                }
+                else
+                {
+                    NvTextureToolsLibrary.Instance.SetTaskDispatcher(m_compressorPtr, IntPtr.Zero);
+                }
+            }
+
+            private static void DispatchHandler(IntPtr task, IntPtr context, int count)
+            {
+                TaskFunction func = PlatformHelper.GetDelegateForFunctionPointer(task, typeof(TaskFunction)) as TaskFunction;
+
+#if NET35
+                for (int i = 0; i < count; i++)
+                    func(context, i);
+#else
+                // Split up work among tasks on the managed ThreadPool based on the number of available processors
+                List<Task> tasks = new List<Task>();
+                int maxTasks = Environment.ProcessorCount;
+                int maxCountPerTask = Math.Max(1, (int)Math.Floor((double)count / (double)maxTasks));
+                int index = 0;
+                for (int i = 0; i < maxTasks; i++)
+                {
+                    if (index >= count)
+                        break;
+ 
+                    int startIndex = index;
+                    int endIndex = startIndex + maxCountPerTask;
+                    index += maxCountPerTask;
+                    Task t = new Task(() =>
+                    {
+                        for (int indx = startIndex; indx < endIndex; indx++)
+                            func(context, indx);
+                    });
+
+                    t.Start();
+                    tasks.Add(t);
+                }
+
+                // Handle any remaining work on this thread
+                for (int indx = index; indx < count; indx++)
+                    func(context, indx);
+
+                if (tasks.Count > 0)
+                    Task.WaitAll(tasks.ToArray());
+#endif
             }
         }
     }

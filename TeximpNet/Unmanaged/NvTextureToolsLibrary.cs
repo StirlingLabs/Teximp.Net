@@ -62,6 +62,23 @@ namespace TeximpNet.Unmanaged
     public delegate void ErrorHandler(CompressorError errorCode);
 
     /// <summary>
+    /// Function that will dispatch a number of tasks based on a task function
+    /// </summary>
+    /// <param name="taskFunction">Unmanaged task function pointer</param>
+    /// <param name="context">Context object</param>
+    /// <param name="count">Number of tasks to execute.</param>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void TaskDispatchFunction(IntPtr taskFunction, IntPtr context, int count);
+
+    /// <summary>
+    /// The task that will be executed.
+    /// </summary>
+    /// <param name="context">Context object</param>
+    /// <param name="id">ID of the task.</param>
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    public delegate void TaskFunction(IntPtr context, int id);
+
+    /// <summary>
     /// Manages the lifetime and access to the Nvidia Texture Tools (NVTT) native library.
     /// </summary>
     public sealed class NvTextureToolsLibrary : UnmanagedLibrary
@@ -784,6 +801,40 @@ namespace TeximpNet.Unmanaged
         }
 
         /// <summary>
+        /// Enables the concurrent task dispatching on the compressor, unless if a custom task dispatcher has been set.
+        /// </summary>
+        /// <param name="compressor">Pointer to compressor object.</param>
+        /// <param name="value">True to enable multi threading for the compressor, false for sequential processing.</param>
+        public void EnableConcurrentTaskDispatcher(IntPtr compressor, bool value)
+        {
+            if (compressor == IntPtr.Zero)
+                return;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttEnableConcurrentTaskDispatcher func = GetFunction<Functions.nvttEnableConcurrentTaskDispatcher>(FunctionNames.nvttEnableConcurrentTaskDispatcher);
+
+            func(compressor, (value) ? NvttBool.True : NvttBool.False);
+        }
+
+        /// <summary>
+        /// Queries the compressor if concurrent task dispatching is enabled, if a custom task dispatcher has not been set.
+        /// </summary>
+        /// <param name="compressor">Pointer to compressor object.</param>
+        /// <returns>True if the compressor will use multi threading when processing, false for sequential processing.</returns>
+        public bool IsConcurrentTaskDispatcherEnabled(IntPtr compressor)
+        {
+            if (compressor == IntPtr.Zero)
+                return false;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttIsConcurrentTaskDispatcherEnabled func = GetFunction<Functions.nvttIsConcurrentTaskDispatcherEnabled>(FunctionNames.nvttIsConcurrentTaskDispatcherEnabled);
+
+            return (func(compressor) == NvttBool.True) ? true : false;
+        }
+
+        /// <summary>
         /// Executes processing of image data, based on input/compression/output options.
         /// </summary>
         /// <param name="compressor">Pointer to compressor object.</param>
@@ -801,6 +852,24 @@ namespace TeximpNet.Unmanaged
             Functions.nvttCompress func = GetFunction<Functions.nvttCompress>(FunctionNames.nvttCompress);
 
             return TranslateBool(func(compressor, inputOptions, compressionOptions, outputOptions));
+        }
+
+        /// <summary>
+        /// Sets a custom task dispatcher the compressor will use during processing to speed it up. The callback needs to be a function
+        /// that takes in (nvttTask* task, void* context, int count) where nvttTask is an unmanaged function pointer with 
+        /// the signature of (void* context, int id).
+        /// </summary>
+        /// <param name="compressor">Pointer to compressor object.</param>
+        /// <param name="taskDispatcher">Callback for task dispatching. Set to null to remove the custom task dispatcher.</param>
+        public void SetTaskDispatcher(IntPtr compressor, IntPtr taskDispatcher)
+        {
+            if (compressor == IntPtr.Zero)
+                return;
+
+            LoadIfNotLoaded();
+
+            Functions.nvttSetTaskDispatcher func = GetFunction<Functions.nvttSetTaskDispatcher>(FunctionNames.nvttSetTaskDispatcher);
+            func(compressor, taskDispatcher);
         }
 
         /// <summary>
@@ -937,6 +1006,9 @@ namespace TeximpNet.Unmanaged
             public const String nvttIsCudaAccelerationEnabled = "nvttIsCudaAccelerationEnabled";
             public const String nvttCompress = "nvttCompress";
             public const String nvttEstimateSize = "nvttEstimateSize";
+            public const String nvttSetTaskDispatcher = "nvttSetTaskDispatcher";
+            public const String nvttEnableConcurrentTaskDispatcher = "nvttEnableConcurrentTaskDispatcher";
+            public const String nvttIsConcurrentTaskDispatcherEnabled = "nvttIsConcurrentTaskDispatcherEnabled";
 
             #endregion
 
@@ -1098,6 +1170,15 @@ namespace TeximpNet.Unmanaged
 
             [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttEstimateSize)]
             public delegate int nvttEstimateSize(IntPtr compressor, IntPtr inputOptions, IntPtr compressionOptions);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttSetTaskDispatcher)]
+            public delegate void nvttSetTaskDispatcher(IntPtr compressor, IntPtr dispatcher);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttEnableConcurrentTaskDispatcher)]
+            public delegate void nvttEnableConcurrentTaskDispatcher(IntPtr compressor, NvttBool enabled);
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl), UnmanagedFunctionName(FunctionNames.nvttIsConcurrentTaskDispatcherEnabled)]
+            public delegate NvttBool nvttIsConcurrentTaskDispatcherEnabled(IntPtr compressor);
 
             #endregion
 
